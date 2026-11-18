@@ -46,3 +46,4 @@ export default function BookingActions({ bookingId, status }: { bookingId: strin
     </div>
   )
 }
+

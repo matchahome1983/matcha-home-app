@@ -170,10 +170,4 @@ export default function ProfilePage() {
     </div>
   )
 }
-Test
-Replace the file.
-Log in as a Pro and go to Profile.
-You should be able to toggle services and certifications on and off.
-Check a Pro’s public profile to confirm they appear.
-Let me know when it works.
 
