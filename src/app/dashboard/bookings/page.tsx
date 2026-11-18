@@ -1,10 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import BookingActions from './booking-actions'
 import ReviewForm from './review-form'
+import { Suspense } from 'react'
 
-export const dynamic = 'force-dynamic'
-
-export default async function MyBookingsPage() {
+async function BookingsContent() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -54,5 +53,13 @@ export default async function MyBookingsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function MyBookingsPage() {
+  return (
+    <Suspense fallback={<p>Loading bookings...</p>}>
+      <BookingsContent />
+    </Suspense>
   )
 }
