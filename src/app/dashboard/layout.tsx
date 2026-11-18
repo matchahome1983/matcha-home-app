@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import LogoutButton from './logout-button'
+import Image from 'next/image'
 
 export default async function DashboardLayout({
   children,
@@ -25,8 +26,15 @@ export default async function DashboardLayout({
     <div className="min-h-screen bg-[#fbf8f3] flex flex-col">
       <header className="bg-white border-b border-[#e8e0d5]">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="text-xl font-semibold text-[#5c7d4e]">
-            Matcha Home
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <Image 
+              src="/logo.png" 
+              alt="Matcha Home" 
+              width={160} 
+              height={40} 
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
 
           <nav className="flex items-center gap-6 text-sm">
@@ -38,6 +46,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e]">Messages</Link>
                 <Link href="/dashboard/profile" className="hover:text-[#5c7d4e]">Profile</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
+                <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
               </>
             ) : (
               <>
@@ -47,6 +56,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/bookings" className="hover:text-[#5c7d4e]">My Bookings</Link>
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e]">Messages</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
+                <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
               </>
             )}
             <LogoutButton />
