@@ -9,9 +9,9 @@ export default async function CirclePage() {
   if (!user) redirect('/login')
 
   const { data: circle } = await supabase
-    .from('circles')
+    .from('circle')
     .select(`
-      pro:profiles!circles_pro_id_fkey (
+      pro:profiles!circle_pro_id_fkey (
         id,
         full_name,
         city,
