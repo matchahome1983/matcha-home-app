@@ -84,6 +84,11 @@ export default async function ProProfilePage({
                     LiveScan Verified
                   </span>
                 )}
+                {pro.is_student && (
+                  <span className="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full whitespace-nowrap">
+                    Student
+                  </span>
+                )}
               </div>
             </div>
 

@@ -8,6 +8,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('client')
+  const [referralCode, setReferralCode] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -28,10 +29,27 @@ export default function LoginPage() {
       if (error) {
         setMessage(error.message)
       } else if (data.user) {
+        // Set role
         await supabase
           .from('profiles')
           .update({ role })
           .eq('id', data.user.id)
+
+        // Apply referral code if provided
+        if (referralCode.trim()) {
+          const { data: referrer } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('referral_code', referralCode.trim().toUpperCase())
+            .single()
+
+          if (referrer) {
+            await supabase
+              .from('profiles')
+              .update({ referred_by: referrer.id })
+              .eq('id', data.user.id)
+          }
+        }
 
         if (role === 'pro') {
           router.push('/onboarding')
@@ -81,33 +99,43 @@ export default function LoginPage() {
           />
 
           {isSignUp && (
-            <div>
-              <p className="text-sm font-medium text-[#2c2c2c] mb-2">I want to</p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRole('client')}
-                  className={`flex-1 py-3 rounded-xl text-sm font-medium ${
-                    role === 'client'
-                      ? 'bg-[#5c7d4e] text-white'
-                      : 'border border-[#f0ebe3] text-gray-600'
-                  }`}
-                >
-                  Find help
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('pro')}
-                  className={`flex-1 py-3 rounded-xl text-sm font-medium ${
-                    role === 'pro'
-                      ? 'bg-[#5c7d4e] text-white'
-                      : 'border border-[#f0ebe3] text-gray-600'
-                  }`}
-                >
-                  Offer help
-                </button>
+            <>
+              <div>
+                <p className="text-sm font-medium text-[#2c2c2c] mb-2">I want to</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRole('client')}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium ${
+                      role === 'client'
+                        ? 'bg-[#5c7d4e] text-white'
+                        : 'border border-[#f0ebe3] text-gray-600'
+                    }`}
+                  >
+                    Find help
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('pro')}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium ${
+                      role === 'pro'
+                        ? 'bg-[#5c7d4e] text-white'
+                        : 'border border-[#f0ebe3] text-gray-600'
+                    }`}
+                  >
+                    Offer help
+                  </button>
+                </div>
               </div>
-            </div>
+
+              <input
+                type="text"
+                placeholder="Referral code (optional)"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                className="w-full border border-[#f0ebe3] rounded-xl px-4 py-3 text-sm"
+              />
+            </>
           )}
 
           <button

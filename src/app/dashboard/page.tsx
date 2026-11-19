@@ -10,64 +10,99 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('*')
     .eq('id', user.id)
     .single()
 
   const isPro = profile?.role === 'pro'
 
-  const { count: pendingCount } = await supabase
-    .from('bookings')
-    .select('*', { count: 'exact', head: true })
-    .eq(isPro ? 'pro_id' : 'client_id', user.id)
-    .eq('status', 'pending')
-
-  const { count: upcomingCount } = await supabase
-    .from('bookings')
-    .select('*', { count: 'exact', head: true })
-    .eq(isPro ? 'pro_id' : 'client_id', user.id)
-    .eq('status', 'confirmed')
+  // Suggested Pros for clients based on timing
+  let suggestedPros: any[] = []
+  if (!isPro && profile?.preferred_timing && profile.preferred_timing.length > 0) {
+    const { data: pros } = await supabase
+      .from('profiles')
+      .select('id, full_name, city, hourly_rate, available_now, avatar_url')
+      .eq('role', 'pro')
+      .limit(4)
+    suggestedPros = pros || []
+  }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#2c2c2c]">
           Welcome{profile?.full_name ? `, ${profile.full_name}` : ''}
         </h1>
-        <p className="text-[#6b6b6b] mt-1">
-          {isPro ? 'Here’s what’s happening with your requests' : 'Here’s what’s happening with your bookings'}
+        <p className="text-gray-500 mt-1">
+          {isPro ? 'Manage your availability and requests' : 'Find help when you need it'}
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Link href={isPro ? '/dashboard/requests' : '/dashboard/bookings'} className="block">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md transition-shadow">
-            <p className="text-sm text-[#6b6b6b]">Pending</p>
-            <p className="text-3xl font-semibold text-[#2c2c2c] mt-1">{pendingCount || 0}</p>
-            <p className="text-sm text-[#5c7d4e] mt-2 font-medium">
-              {isPro ? 'View requests →' : 'View bookings →'}
-            </p>
-          </div>
-        </Link>
-
-        <Link href="/dashboard/bookings" className="block">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md transition-shadow">
-            <p className="text-sm text-[#6b6b6b]">Upcoming</p>
-            <p className="text-3xl font-semibold text-[#2c2c2c] mt-1">{upcomingCount || 0}</p>
-            <p className="text-sm text-[#5c7d4e] mt-2 font-medium">View schedule →</p>
-          </div>
-        </Link>
-      </div>
-
-      {!isPro && (
-        <div className="mt-8">
-          <Link
-            href="/dashboard/search"
-            className="inline-block bg-[#5c7d4e] hover:bg-[#4a6b3e] text-white px-6 py-3 rounded-xl text-sm font-medium transition-colors"
-          >
-            Find a Pro
+      {isPro ? (
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Link href="/dashboard/requests" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+            <h2 className="font-semibold text-[#2c2c2c]">Requests</h2>
+            <p className="text-sm text-gray-500 mt-1">View booking requests</p>
+          </Link>
+          <Link href="/dashboard/availability" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+            <h2 className="font-semibold text-[#2c2c2c]">Availability</h2>
+            <p className="text-sm text-gray-500 mt-1">Set your hours</p>
+          </Link>
+          <Link href="/dashboard/earnings" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+            <h2 className="font-semibold text-[#2c2c2c]">Earnings</h2>
+            <p className="text-sm text-gray-500 mt-1">See your completed work</p>
+          </Link>
+          <Link href="/dashboard/profile" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+            <h2 className="font-semibold text-[#2c2c2c]">Profile</h2>
+            <p className="text-sm text-gray-500 mt-1">Edit your info</p>
           </Link>
         </div>
+      ) : (
+        <>
+          {suggestedPros.length > 0 && (
+            <div className="mb-8">
+              <h2 className="font-semibold text-[#2c2c2c] mb-3">Pros available when you need help</h2>
+              <p className="text-sm text-gray-500 mb-4">Based on your preferences</p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {suggestedPros.map((pro) => (
+                  <Link key={pro.id} href={`/dashboard/pro/${pro.id}`} className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] hover:shadow-md flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[#f0f7ed] flex items-center justify-center text-[#5c7d4e] font-medium flex-shrink-0 overflow-hidden">
+                      {pro.avatar_url ? (
+                        <img src={pro.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        pro.full_name?.[0] || 'P'
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#2c2c2c] truncate">{pro.full_name}</p>
+                      <p className="text-sm text-gray-500">{pro.city || 'Location not set'}</p>
+                      {pro.hourly_rate && <p className="text-sm font-medium">${pro.hourly_rate}/hr</p>}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Link href="/dashboard/search" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+              <h2 className="font-semibold text-[#2c2c2c]">Find Pros</h2>
+              <p className="text-sm text-gray-500 mt-1">Search for help</p>
+            </Link>
+            <Link href="/dashboard/circle" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+              <h2 className="font-semibold text-[#2c2c2c]">Your Circle</h2>
+              <p className="text-sm text-gray-500 mt-1">Saved Pros</p>
+            </Link>
+            <Link href="/dashboard/bookings" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+              <h2 className="font-semibold text-[#2c2c2c]">My Bookings</h2>
+              <p className="text-sm text-gray-500 mt-1">Upcoming and past</p>
+            </Link>
+            <Link href="/dashboard/messages" className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+              <h2 className="font-semibold text-[#2c2c2c]">Messages</h2>
+              <p className="text-sm text-gray-500 mt-1">Chat with Pros</p>
+            </Link>
+          </div>
+        </>
       )}
     </div>
   )
