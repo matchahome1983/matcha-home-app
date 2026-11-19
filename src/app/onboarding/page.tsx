@@ -10,12 +10,14 @@ export default function OnboardingPage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [certs, setCerts] = useState<any[]>([])
   const [selectedCerts, setSelectedCerts] = useState<string[]>([])
-  const [availability, setAvailability] = useState<{[key: string]: boolean}>({})
+  const [times, setTimes] = useState<string[]>([])
+  const [days, setDays] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const timeOptions = ['Morning', 'Midday', 'Afternoon', 'Evening']
+  const dayOptions = ['Weekdays', 'Weekends']
 
   useEffect(() => {
     async function load() {
@@ -27,38 +29,35 @@ export default function OnboardingPage() {
     load()
   }, [])
 
+  function toggleTime(t: string) {
+    setTimes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+  }
+
+  function toggleDay(d: string) {
+    setDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
+  }
+
   async function handleFinish() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Save services
     if (selectedServices.length > 0) {
       await supabase.from('pro_services').insert(
         selectedServices.map(id => ({ pro_id: user.id, service_id: id }))
       )
     }
 
-    // Save certifications
     if (selectedCerts.length > 0) {
       await supabase.from('pro_certifications').insert(
         selectedCerts.map(id => ({ pro_id: user.id, certification_id: id }))
       )
     }
 
-    // Save availability (simple all-day slots)
-    const availRows = days
-      .filter(day => availability[day])
-      .map(day => ({
-        pro_id: user.id,
-        day_of_week: day,
-        start_time: '09:00',
-        end_time: '17:00',
-      }))
-
-    if (availRows.length > 0) {
-      await supabase.from('availability').insert(availRows)
-    }
+    await supabase.from('profiles').update({
+      availability_times: times.length > 0 ? times : null,
+      availability_days: days.length > 0 ? days : null,
+    }).eq('id', user.id)
 
     router.push('/dashboard')
     setLoading(false)
@@ -124,18 +123,37 @@ export default function OnboardingPage() {
         )}
 
         {step === 3 && (
-          <div className="space-y-2">
-            {days.map(day => (
-              <label key={day} className="flex items-center gap-3 p-3 border border-[#f0ebe3] rounded-xl cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={availability[day] || false}
-                  onChange={(e) => setAvailability({ ...availability, [day]: e.target.checked })}
-                />
-                <span className="text-sm">{day}</span>
-              </label>
-            ))}
-            <p className="text-xs text-gray-400 mt-2">Selected days will be set to 9am–5pm. You can adjust times later.</p>
+          <div className="space-y-6">
+            <div>
+              <p className="text-sm font-medium text-[#2c2c2c] mb-2">Time of day</p>
+              <div className="flex flex-wrap gap-2">
+                {timeOptions.map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => toggleTime(t)}
+                    className={`px-4 py-2 rounded-full text-sm ${times.includes(t) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#2c2c2c] mb-2">Days</p>
+              <div className="flex flex-wrap gap-2">
+                {dayOptions.map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => toggleDay(d)}
+                    className={`px-4 py-2 rounded-full text-sm ${days.includes(d) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => setStep(2)} className="flex-1 border border-[#f0ebe3] py-3 rounded-xl text-sm">Back</button>
               <button onClick={handleFinish} disabled={loading} className="flex-1 bg-[#5c7d4e] text-white py-3 rounded-xl text-sm font-medium disabled:opacity-50">
