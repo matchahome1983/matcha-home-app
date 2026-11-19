@@ -24,15 +24,15 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#fbf8f3] flex flex-col">
-      <header className="bg-white border-b border-[#e8e0d5]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-3">
+      <header className="bg-white/80 backdrop-blur border-b border-[#f0ebe3] sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2">
             <Image 
               src="/logo.png" 
               alt="Matcha Home" 
-              width={160} 
-              height={40} 
-              className="h-10 w-auto"
+              width={140} 
+              height={36} 
+              className="h-9 w-auto"
               priority
             />
           </Link>
@@ -43,7 +43,6 @@ export default async function DashboardLayout({
                 <Link href="/dashboard" className="hover:text-[#5c7d4e]">Dashboard</Link>
                 <Link href="/dashboard/requests" className="hover:text-[#5c7d4e]">Requests</Link>
                 <Link href="/dashboard/availability" className="hover:text-[#5c7d4e]">Availability</Link>
-                <Link href="/dashboard/messages" className="hover:text-[#5c7d4e]">Messages</Link>
                 <Link href="/dashboard/profile" className="hover:text-[#5c7d4e]">Profile</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
                 <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
@@ -68,7 +67,7 @@ export default async function DashboardLayout({
         {children}
       </main>
 
-      <footer className="border-t border-[#e8e0d5] py-6 text-center text-xs text-gray-500">
+      <footer className="border-t border-[#f0ebe3] py-6 text-center text-xs text-gray-500">
         <p>Matcha Home connects clients with independent Pros. No employment relationship is created.</p>
         <p className="mt-1">© {new Date().getFullYear()} Matcha Home</p>
       </footer>

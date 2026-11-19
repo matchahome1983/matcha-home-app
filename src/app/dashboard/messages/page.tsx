@@ -1,107 +1,90 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+export default async function MessagesPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-export default function MessagesPage() {
-  const [messages, setMessages] = useState<any[]>([])
-  const [recipientId, setRecipientId] = useState('')
-  const [content, setContent] = useState('')
-  const [loading, setLoading] = useState(false)
-  const supabase = createClient()
+  if (!user) redirect('/login')
 
-  async function loadMessages() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  // Get unique conversations (people the user has messaged)
+  const { data: messages } = await supabase
+    .from('messages')
+    .select(`
+      id,
+      content,
+      created_at,
+      sender_id,
+      receiver_id,
+      sender:profiles!messages_sender_id_fkey(full_name),
+      receiver:profiles!messages_receiver_id_fkey(full_name)
+    `)
+    .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+    .order('created_at', { ascending: false })
 
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-      .order('created_at', { ascending: false })
-      .limit(50)
+  // Group into conversations
+  const conversations = new Map()
 
-    setMessages(data || [])
-  }
+  messages?.forEach((msg: any) => {
+    const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
+    const otherName = msg.sender_id === user.id ? msg.receiver?.full_name : msg.sender?.full_name
 
-  useEffect(() => {
-    loadMessages()
-
-    const channel = supabase
-      .channel('messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-        loadMessages()
+    if (!conversations.has(otherId)) {
+      conversations.set(otherId, {
+        id: otherId,
+        name: otherName || 'User',
+        lastMessage: msg.content,
+        lastMessageAt: msg.created_at,
       })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [])
-
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault()
-    if (!content.trim() || !recipientId.trim()) return
-
-    setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data: canSend } = await supabase.rpc('can_send_message', { sender: user.id })
-    if (!canSend) {
-      alert('Message limit reached')
-      setLoading(false)
-      return
     }
+  })
 
-    await supabase.from('messages').insert({
-      sender_id: user.id,
-      recipient_id: recipientId.trim(),
-      content: content.trim()
-    })
-
-    setContent('')
-    setLoading(false)
-    loadMessages()
-  }
+  const conversationList = Array.from(conversations.values())
 
   return (
-    <div>
-      <h1 className="text-3xl font-semibold text-[#5c7d4e] mb-6">Messages</h1>
-
-      <form onSubmit={sendMessage} className="bg-white rounded-xl p-5 shadow-sm mb-8">
-        <input
-          type="text"
-          placeholder="Recipient user ID"
-          value={recipientId}
-          onChange={e => setRecipientId(e.target.value)}
-          className="w-full border rounded-lg px-4 py-2 mb-3"
-        />
-        <textarea
-          placeholder="Message"
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          className="w-full border rounded-lg px-4 py-2 mb-3"
-          rows={3}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-[#7a9e6a] text-white px-5 py-2 rounded-lg text-sm hover:bg-[#5c7d4e] disabled:opacity-50"
-        >
-          {loading ? 'Sending...' : 'Send'}
-        </button>
-      </form>
-
-      <div className="space-y-3">
-        {messages.map(m => (
-          <div key={m.id} className="bg-white rounded-xl p-4 shadow-sm border border-[#e8e0d5]">
-            <p className="text-sm text-gray-500 mb-1">
-              {new Date(m.created_at).toLocaleString()}
-            </p>
-            <p>{m.content}</p>
-          </div>
-        ))}
-        {messages.length === 0 && <p className="text-gray-500">No messages yet.</p>}
+    <div className="max-w-3xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-[#2c2c2c]">Messages</h1>
+        <p className="text-gray-500 mt-1">Your conversations with Pros and clients</p>
       </div>
+
+      {conversationList.length > 0 ? (
+        <div className="space-y-3">
+          {conversationList.map((convo) => (
+            <Link
+              key={convo.id}
+              href={`/dashboard/messages/${convo.id}`}
+              className="block bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#f0f7ed] flex items-center justify-center text-sm font-medium text-[#5c7d4e]">
+                    {convo.name?.[0] || 'U'}
+                  </div>
+                  <div>
+                    <p className="font-medium text-[#2c2c2c]">{convo.name}</p>
+                    <p className="text-sm text-gray-500 truncate max-w-xs mt-0.5">
+                      {convo.lastMessage}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 whitespace-nowrap">
+                  {new Date(convo.lastMessageAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 bg-white rounded-2xl border border-[#f0ebe3]">
+          <p className="text-gray-500">No messages yet.</p>
+          <p className="text-sm text-gray-400 mt-1">Start a conversation from a Pro’s profile.</p>
+        </div>
+      )}
     </div>
   )
 }

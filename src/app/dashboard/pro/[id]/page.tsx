@@ -9,7 +9,6 @@ export default async function ProProfilePage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-
   const supabase = await createClient()
 
   const { data: pro } = await supabase
@@ -31,53 +30,64 @@ export default async function ProProfilePage({
     .select('certifications(name)')
     .eq('pro_id', pro.id)
 
-  const { data: reviews } = await supabase.rpc('get_pro_reviews', { pro: pro.id })
   const { data: avgRating } = await supabase.rpc('get_average_rating', { pro_id: pro.id })
 
   return (
-    <div className="max-w-3xl">
-      <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-        {pro.avatar_url && (
-          <img src={pro.avatar_url} alt={pro.full_name} className="w-20 h-20 rounded-full object-cover mb-4" />
-        )}
+    <div className="max-w-3xl mx-auto">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
+        <div className="flex items-start gap-5">
+          <div className="w-20 h-20 rounded-full bg-[#f0f7ed] flex items-center justify-center text-2xl font-medium text-[#5c7d4e] flex-shrink-0 overflow-hidden">
+            {pro.avatar_url ? (
+              <img src={pro.avatar_url} alt={pro.full_name} className="w-full h-full object-cover" />
+            ) : (
+              pro.full_name?.[0] || 'P'
+            )}
+          </div>
 
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-semibold text-[#5c7d4e]">{pro.full_name}</h1>
-            <p className="text-gray-600 mt-1">{pro.city}</p>
-            <div className="flex items-center gap-3 mt-2">
-              {pro.hourly_rate && <p className="text-xl font-medium">${pro.hourly_rate}/hr</p>}
-              {avgRating && (
+          <div className="flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-semibold text-[#2c2c2c]">{pro.full_name}</h1>
+                <p className="text-gray-500 mt-0.5">{pro.city || 'Location not set'}</p>
+              </div>
+              {pro.available_now && (
+                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full whitespace-nowrap">
+                  Available Now
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 mt-3">
+              {pro.hourly_rate && (
+                <span className="text-lg font-medium text-[#2c2c2c]">${pro.hourly_rate}/hr</span>
+              )}
+              {avgRating > 0 && (
                 <span className="text-yellow-600 font-medium">★ {Number(avgRating).toFixed(1)}</span>
               )}
             </div>
           </div>
-          {pro.available_now && (
-            <span className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">Available Now</span>
-          )}
         </div>
 
-        {pro.bio && <p className="mt-4 text-gray-700">{pro.bio}</p>}
+        {pro.bio && (
+          <p className="mt-5 text-gray-700 leading-relaxed">{pro.bio}</p>
+        )}
 
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col sm:flex-row gap-3">
           <AddToCircleButton proId={pro.id} />
-        </div>
-
-        <div className="mt-6">
           <BookingRequestForm proId={pro.id} />
         </div>
 
-        <p className="text-xs text-gray-500 mt-6">
+        <p className="text-xs text-gray-400 mt-6">
           Pros on Matcha Home are independent contractors. You hire and pay them directly. Matcha Home facilitates the connection only.
         </p>
       </div>
 
       {services && services.length > 0 && (
-        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold mb-3">Services</h2>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
+          <h2 className="font-semibold text-[#2c2c2c] mb-3">Services</h2>
           <div className="flex flex-wrap gap-2">
             {services.map((s: any) => (
-              <span key={s.services.name} className="bg-[#f0f7ed] text-[#5c7d4e] px-3 py-1 rounded-full text-sm">
+              <span key={s.services.name} className="bg-[#f0f7ed] text-[#5c7d4e] px-3 py-1.5 rounded-full text-sm">
                 {s.services.name}
               </span>
             ))}
@@ -86,27 +96,15 @@ export default async function ProProfilePage({
       )}
 
       {certs && certs.length > 0 && (
-        <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
-          <h2 className="font-semibold mb-3">Certifications</h2>
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
+          <h2 className="font-semibold text-[#2c2c2c] mb-3">Certifications</h2>
           <div className="flex flex-wrap gap-2">
             {certs.map((c: any) => (
-              <span key={c.certifications.name} className="bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm">
+              <span key={c.certifications.name} className="bg-blue-50 text-blue-800 px-3 py-1.5 rounded-full text-sm">
                 {c.certifications.name}
               </span>
             ))}
           </div>
-        </div>
-      )}
-
-      {reviews && reviews.length > 0 && (
-        <div className="bg-white rounded-xl p-6 shadow-sm">
-          <h2 className="font-semibold mb-4">Reviews</h2>
-          {reviews.map((r: any, i: number) => (
-            <div key={i} className="border-b last:border-0 py-3">
-              <p className="font-medium">{r.rating}/5 — {r.reviewer_name}</p>
-              {r.comment && <p className="text-sm text-gray-600 mt-1">{r.comment}</p>}
-            </div>
-          ))}
         </div>
       )}
     </div>
