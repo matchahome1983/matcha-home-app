@@ -104,12 +104,15 @@ export default function ProfilePage() {
           {avatarUrl && (
             <img src={avatarUrl} alt="Profile" className="w-20 h-20 rounded-full object-cover mb-3" />
           )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoUpload}
-            className="text-sm"
-          />
+          <label className="inline-block bg-[#5c7d4e] text-white px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer hover:bg-[#4a6b3e]">
+            Upload photo
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
+          </label>
         </div>
 
         <div>
