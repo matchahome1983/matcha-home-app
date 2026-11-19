@@ -15,8 +15,8 @@ export default async function DashboardPage() {
     .single()
 
   const isPro = profile?.role === 'pro'
+  const isNewUser = profile?.created_at && (Date.now() - new Date(profile.created_at).getTime()) < 24 * 60 * 60 * 1000
 
-  // Suggested Pros for clients based on timing
   let suggestedPros: any[] = []
   if (!isPro && profile?.preferred_timing && profile.preferred_timing.length > 0) {
     const { data: pros } = await supabase
@@ -29,6 +29,17 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
+      {isNewUser && (
+        <div className="bg-[#f0f7ed] border border-[#e0eed8] rounded-2xl p-5 mb-6">
+          <p className="font-medium text-[#5c7d4e]">Welcome to Matcha Home</p>
+          <p className="text-sm text-[#5c7d4e]/80 mt-1">
+            {isPro 
+              ? 'Set your availability and start receiving requests.' 
+              : 'Find trusted Pros for flexible, part-time help.'}
+          </p>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#2c2c2c]">
           Welcome{profile?.full_name ? `, ${profile.full_name}` : ''}

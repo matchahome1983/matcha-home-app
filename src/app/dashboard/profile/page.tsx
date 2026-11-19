@@ -65,11 +65,44 @@ export default function ProfilePage() {
     setLoading(false)
   }
 
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setMessage('Uploading photo...')
+    const path = `${user.id}/avatar.jpg`
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true })
+
+    if (uploadError) {
+      setMessage('Error uploading photo')
+      return
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', user.id)
+    setMessage('Photo updated')
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-semibold text-[#2c2c2c] mb-6">Edit Profile</h1>
 
       <form onSubmit={handleSave} className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] space-y-4">
+        <div>
+          <label className="text-sm font-medium text-[#2c2c2c] block mb-1">Profile photo</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoUpload}
+            className="text-sm"
+          />
+        </div>
+
         <div>
           <label className="text-sm font-medium text-[#2c2c2c] block mb-1">Name</label>
           <input

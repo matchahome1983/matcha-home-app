@@ -136,6 +136,14 @@ export default async function ProProfilePage({
           >
             Message
           </Link>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent('Check out this Pro on Matcha Home')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center border border-[#f0ebe3] text-gray-600 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50"
+          >
+            Share
+          </a>
           <BookingRequestForm proId={pro.id} />
         </div>
 

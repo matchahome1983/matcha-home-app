@@ -28,32 +28,20 @@ export default async function MyBookingsPage() {
     .eq(isPro ? 'pro_id' : 'client_id', user.id)
     .order('start_time', { ascending: false })
 
-  const statusStyles: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-green-100 text-green-800',
-    completed: 'bg-gray-100 text-gray-700',
-    cancelled: 'bg-red-100 text-red-800',
-  }
-
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#2c2c2c]">My Bookings</h1>
-        <p className="text-gray-500 mt-1">
-          {isPro ? 'Requests and upcoming work' : 'Your upcoming and past bookings'}
-        </p>
-      </div>
+      <h1 className="text-2xl font-semibold text-[#2c2c2c] mb-6">My Bookings</h1>
 
       {bookings && bookings.length > 0 ? (
         <div className="space-y-4">
           {bookings.map((booking: any) => (
             <div key={booking.id} className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3]">
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex justify-between items-start">
                 <div>
                   <p className="font-medium text-[#2c2c2c]">
                     {isPro ? booking.client?.full_name : booking.pro?.full_name}
                   </p>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-sm text-gray-500 mt-1">
                     {new Date(booking.start_time).toLocaleDateString(undefined, {
                       weekday: 'short',
                       month: 'short',
@@ -63,25 +51,22 @@ export default async function MyBookingsPage() {
                     })}
                   </p>
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusStyles[booking.status] || 'bg-gray-100 text-gray-700'}`}>
+                <span className={`text-xs px-2.5 py-1 rounded-full ${
+                  booking.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                  booking.status === 'completed' ? 'bg-gray-100 text-gray-600' :
+                  booking.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
                   {booking.status}
                 </span>
               </div>
-
               {booking.notes && (
                 <p className="text-sm text-gray-600 mt-3">{booking.notes}</p>
               )}
-
-              <div className="mt-4">
-                <BookingActions bookingId={booking.id} status={booking.status} />
-              </div>
-
+              <BookingActions bookingId={booking.id} status={booking.status} />
               {booking.status === 'completed' && !isPro && (
                 <div className="mt-4 pt-4 border-t border-[#f0ebe3] space-y-3">
-                  <Link
-                    href={`/dashboard/pro/${booking.pro_id}`}
-                    className="inline-block bg-[#5c7d4e] text-white text-sm px-4 py-2 rounded-xl hover:bg-[#4a6b3e]"
-                  >
+                  <Link href={`/dashboard/pro/${booking.pro_id}`} className="inline-block bg-[#5c7d4e] text-white text-sm px-4 py-2.5 rounded-xl hover:bg-[#4a6b3e]">
                     Book Again
                   </Link>
                   <ReviewForm bookingId={booking.id} proId={booking.pro_id} />
@@ -93,6 +78,9 @@ export default async function MyBookingsPage() {
       ) : (
         <div className="text-center py-16 bg-white rounded-2xl border border-[#f0ebe3]">
           <p className="text-gray-500">No bookings yet.</p>
+          <Link href="/dashboard/search" className="inline-block mt-4 bg-[#5c7d4e] text-white text-sm px-5 py-2.5 rounded-xl">
+            Find Pros
+          </Link>
         </div>
       )}
     </div>
