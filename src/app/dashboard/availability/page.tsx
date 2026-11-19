@@ -2,9 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const weekends = ['Saturday', 'Sunday']
+
+const timePresets = [
+  { label: 'Morning', start: '08:00', end: '12:00' },
+  { label: 'Afternoon', start: '12:00', end: '17:00' },
+  { label: 'Evening', start: '17:00', end: '21:00' },
+  { label: 'All day', start: '08:00', end: '21:00' },
+]
 
 export default function AvailabilityPage() {
   const [slots, setSlots] = useState<any[]>([])
@@ -14,7 +22,6 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const supabase = createClient()
-  const router = useRouter()
 
   useEffect(() => {
     loadAvailability()
@@ -39,6 +46,19 @@ export default function AvailabilityPage() {
     )
   }
 
+  function selectWeekdays() {
+    setSelectedDays(weekdays)
+  }
+
+  function selectWeekends() {
+    setSelectedDays(weekends)
+  }
+
+  function applyPreset(preset: { start: string; end: string }) {
+    setStartTime(preset.start)
+    setEndTime(preset.end)
+  }
+
   async function addSlots() {
     if (selectedDays.length === 0) {
       setMessage('Select at least one day')
@@ -46,6 +66,7 @@ export default function AvailabilityPage() {
     }
 
     setLoading(true)
+    setMessage('')
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
@@ -59,7 +80,7 @@ export default function AvailabilityPage() {
     const { error } = await supabase.from('availability').insert(newSlots)
 
     if (error) {
-      setMessage('Error adding availability')
+      setMessage('Error adding availability: ' + error.message)
     } else {
       setMessage('Availability added')
       setSelectedDays([])
@@ -86,7 +107,16 @@ export default function AvailabilityPage() {
       <h1 className="text-2xl font-semibold text-[#2c2c2c] mb-6">Availability</h1>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
-        <h2 className="font-medium text-[#2c2c2c] mb-4">Add multiple days</h2>
+        <h2 className="font-medium text-[#2c2c2c] mb-4">Add availability</h2>
+
+        <div className="flex gap-2 mb-3">
+          <button onClick={selectWeekdays} className="text-sm border border-[#f0ebe3] px-3 py-1.5 rounded-full">
+            All weekdays
+          </button>
+          <button onClick={selectWeekends} className="text-sm border border-[#f0ebe3] px-3 py-1.5 rounded-full">
+            Weekends
+          </button>
+        </div>
 
         <div className="flex flex-wrap gap-2 mb-4">
           {days.map(day => (
@@ -101,6 +131,19 @@ export default function AvailabilityPage() {
               }`}
             >
               {day.slice(0, 3)}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-4">
+          {timePresets.map(p => (
+            <button
+              key={p.label}
+              type="button"
+              onClick={() => applyPreset(p)}
+              className="text-sm border border-[#f0ebe3] px-3 py-1.5 rounded-full"
+            >
+              {p.label}
             </button>
           ))}
         </div>
