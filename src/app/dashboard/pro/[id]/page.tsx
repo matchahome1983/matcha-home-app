@@ -1,3 +1,7 @@
+import { createClient } from '@/lib/supabase/server'
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
 import AddToCircleButton from './add-to-circle-button'
 import BookingRequestForm from './booking-request-form'
 import AvailabilityCalendar from './availability-calendar'
