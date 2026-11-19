@@ -1,30 +1,48 @@
+'use client'
+
+const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const shortDays: Record<string, string> = {
+  Monday: 'Mon',
+  Tuesday: 'Tue',
+  Wednesday: 'Wed',
+  Thursday: 'Thu',
+  Friday: 'Fri',
+  Saturday: 'Sat',
+  Sunday: 'Sun',
+}
+
 export default function AvailabilityCalendar({ availability }: { availability: any[] }) {
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const grouped: Record<string, any[]> = {}
+  dayOrder.forEach(d => { grouped[d] = [] })
+  availability.forEach(slot => {
+    if (grouped[slot.day_of_week]) {
+      grouped[slot.day_of_week].push(slot)
+    }
+  })
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
-      <h2 className="font-semibold text-[#2c2c2c] mb-4">Weekly Availability</h2>
-      <div className="grid grid-cols-7 gap-2 text-center text-sm">
-        {days.map((day) => {
-          const slots = availability.filter((a) => a.day_of_week === day)
-          const hasSlots = slots.length > 0
-
+    <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3]">
+      <h2 className="font-semibold text-[#2c2c2c] mb-4">Availability</h2>
+      <div className="space-y-3">
+        {dayOrder.map(day => {
+          const slots = grouped[day]
           return (
-            <div key={day} className="flex flex-col">
-              <div className="text-xs text-gray-500 mb-2">{day.slice(0, 3)}</div>
-              <div
-                className={`flex-1 rounded-xl p-2 min-h-[60px] flex flex-col items-center justify-center ${
-                  hasSlots ? 'bg-[#f0f7ed]' : 'bg-gray-50'
-                }`}
-              >
-                {hasSlots ? (
-                  slots.map((s: any, i: number) => (
-                    <div key={i} className="text-xs text-[#5c7d4e] font-medium leading-tight">
-                      {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
-                    </div>
+            <div key={day} className="flex items-start gap-3">
+              <div className="w-10 text-sm font-medium text-gray-500 pt-1.5">
+                {shortDays[day]}
+              </div>
+              <div className="flex-1 flex flex-wrap gap-2">
+                {slots.length > 0 ? (
+                  slots.map((slot, i) => (
+                    <span
+                      key={i}
+                      className="bg-[#f0f7ed] text-[#5c7d4e] text-sm px-3 py-1.5 rounded-lg"
+                    >
+                      {slot.start_time?.slice(0, 5)} – {slot.end_time?.slice(0, 5)}
+                    </span>
                   ))
                 ) : (
-                  <div className="text-xs text-gray-300">—</div>
+                  <span className="text-sm text-gray-400 py-1.5">Unavailable</span>
                 )}
               </div>
             </div>

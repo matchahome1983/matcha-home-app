@@ -9,7 +9,9 @@ export default function ProfilePage() {
   const [bio, setBio] = useState('')
   const [hourlyRate, setHourlyRate] = useState('')
   const [city, setCity] = useState('')
+  const [phone, setPhone] = useState('')
   const [isStudent, setIsStudent] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const supabase = createClient()
@@ -31,7 +33,9 @@ export default function ProfilePage() {
         setBio(profile.bio || '')
         setHourlyRate(profile.hourly_rate?.toString() || '')
         setCity(profile.city || '')
+        setPhone(profile.phone || '')
         setIsStudent(profile.is_student || false)
+        setAvatarUrl(profile.avatar_url || '')
       }
     }
     load()
@@ -52,6 +56,7 @@ export default function ProfilePage() {
         bio,
         hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
         city,
+        phone,
         is_student: isStudent,
       })
       .eq('id', user.id)
@@ -85,6 +90,7 @@ export default function ProfilePage() {
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
     await supabase.from('profiles').update({ avatar_url: data.publicUrl }).eq('id', user.id)
+    setAvatarUrl(data.publicUrl)
     setMessage('Photo updated')
   }
 
@@ -94,7 +100,10 @@ export default function ProfilePage() {
 
       <form onSubmit={handleSave} className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] space-y-4">
         <div>
-          <label className="text-sm font-medium text-[#2c2c2c] block mb-1">Profile photo</label>
+          <label className="text-sm font-medium text-[#2c2c2c] block mb-2">Profile photo</label>
+          {avatarUrl && (
+            <img src={avatarUrl} alt="Profile" className="w-20 h-20 rounded-full object-cover mb-3" />
+          )}
           <input
             type="file"
             accept="image/*"
@@ -119,6 +128,16 @@ export default function ProfilePage() {
             type="text"
             value={city}
             onChange={(e) => setCity(e.target.value)}
+            className="w-full border border-[#f0ebe3] rounded-xl px-4 py-2.5 text-sm"
+          />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-[#2c2c2c] block mb-1">Phone</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
             className="w-full border border-[#f0ebe3] rounded-xl px-4 py-2.5 text-sm"
           />
         </div>

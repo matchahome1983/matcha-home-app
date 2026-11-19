@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('')
   const [role, setRole] = useState('client')
   const [referralCode, setReferralCode] = useState('')
+  const [photo, setPhoto] = useState<File | null>(null)
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -32,6 +33,20 @@ export default function LoginPage() {
       if (error) {
         setMessage(error.message)
       } else if (data.user) {
+        let avatarUrl = null
+
+        if (photo) {
+          const path = `${data.user.id}/avatar.jpg`
+          const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(path, photo, { upsert: true })
+
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)
+            avatarUrl = urlData.publicUrl
+          }
+        }
+
         await supabase
           .from('profiles')
           .update({
@@ -39,6 +54,7 @@ export default function LoginPage() {
             full_name: fullName,
             city,
             phone,
+            avatar_url: avatarUrl,
           })
           .eq('id', data.user.id)
 
@@ -129,6 +145,16 @@ export default function LoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 className="w-full border border-[#f0ebe3] rounded-xl px-4 py-3 text-sm"
               />
+
+              <div>
+                <label className="text-sm text-gray-600 block mb-1">Profile photo (optional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                  className="text-sm"
+                />
+              </div>
 
               <div>
                 <p className="text-sm font-medium text-[#2c2c2c] mb-2">I want to</p>
