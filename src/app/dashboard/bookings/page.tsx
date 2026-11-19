@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import BookingActions from './booking-actions'
 import ReviewForm from './review-form'
 
@@ -76,7 +77,13 @@ export default async function MyBookingsPage() {
               </div>
 
               {booking.status === 'completed' && !isPro && (
-                <div className="mt-4 pt-4 border-t border-[#f0ebe3]">
+                <div className="mt-4 pt-4 border-t border-[#f0ebe3] space-y-3">
+                  <Link
+                    href={`/dashboard/pro/${booking.pro_id}`}
+                    className="inline-block bg-[#5c7d4e] text-white text-sm px-4 py-2 rounded-xl hover:bg-[#4a6b3e]"
+                  >
+                    Book Again
+                  </Link>
                   <ReviewForm bookingId={booking.id} proId={booking.pro_id} />
                 </div>
               )}

@@ -22,7 +22,6 @@ export default async function DashboardLayout({
 
   const isPro = profile?.role === 'pro'
 
-  // Count unread messages (simple version: messages where user is receiver and not yet read)
   const { count: unreadCount } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
@@ -50,6 +49,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard" className="hover:text-[#5c7d4e]">Dashboard</Link>
                 <Link href="/dashboard/requests" className="hover:text-[#5c7d4e]">Requests</Link>
                 <Link href="/dashboard/availability" className="hover:text-[#5c7d4e]">Availability</Link>
+                <Link href="/dashboard/earnings" className="hover:text-[#5c7d4e]">Earnings</Link>
                 <Link href="/dashboard/notifications" className="hover:text-[#5c7d4e]">Notifications</Link>
                 <Link href="/dashboard/profile" className="hover:text-[#5c7d4e]">Profile</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
