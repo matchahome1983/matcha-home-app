@@ -12,6 +12,7 @@ export default function OnboardingPage() {
   const [selectedCerts, setSelectedCerts] = useState<string[]>([])
   const [times, setTimes] = useState<string[]>([])
   const [days, setDays] = useState<string[]>([])
+  const [availableNow, setAvailableNow] = useState(false)
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
@@ -57,6 +58,7 @@ export default function OnboardingPage() {
     await supabase.from('profiles').update({
       availability_times: times.length > 0 ? times : null,
       availability_days: days.length > 0 ? days : null,
+      available_now: availableNow,
     }).eq('id', user.id)
 
     router.push('/dashboard')
@@ -102,7 +104,7 @@ export default function OnboardingPage() {
 
         {step === 2 && (
           <div className="space-y-2">
-            {certs.map(c => (
+            {certs.length > 0 ? certs.map(c => (
               <label key={c.id} className="flex items-center gap-3 p-3 border border-[#f0ebe3] rounded-xl cursor-pointer">
                 <input
                   type="checkbox"
@@ -114,7 +116,9 @@ export default function OnboardingPage() {
                 />
                 <span className="text-sm">{c.name}</span>
               </label>
-            ))}
+            )) : (
+              <p className="text-sm text-gray-500">No certifications listed yet. You can add them later.</p>
+            )}
             <div className="flex gap-3 mt-4">
               <button onClick={() => setStep(1)} className="flex-1 border border-[#f0ebe3] py-3 rounded-xl text-sm">Back</button>
               <button onClick={() => setStep(3)} className="flex-1 bg-[#5c7d4e] text-white py-3 rounded-xl text-sm font-medium">Continue</button>
@@ -124,6 +128,15 @@ export default function OnboardingPage() {
 
         {step === 3 && (
           <div className="space-y-6">
+            <label className="flex items-center gap-3 p-3 border border-[#f0ebe3] rounded-xl cursor-pointer">
+              <input
+                type="checkbox"
+                checked={availableNow}
+                onChange={(e) => setAvailableNow(e.target.checked)}
+              />
+              <span className="text-sm font-medium">Available Now</span>
+            </label>
+
             <div>
               <p className="text-sm font-medium text-[#2c2c2c] mb-2">Time of day</p>
               <div className="flex flex-wrap gap-2">
