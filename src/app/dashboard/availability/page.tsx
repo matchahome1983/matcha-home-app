@@ -1,18 +1,17 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
-
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-const weekends = ['Saturday', 'Sunday']
-
 const timePresets = [
   { label: 'Morning', start: '08:00', end: '12:00' },
   { label: 'Afternoon', start: '12:00', end: '17:00' },
   { label: 'Evening', start: '17:00', end: '21:00' },
   { label: 'All day', start: '08:00', end: '21:00' },
 ]
+
+function formatTime(t: string) {
+  if (!t) return ''
+  const [h, m] = t.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const hour = h % 12 || 12
+  return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
+}
 
 export default function AvailabilityPage() {
   const [slots, setSlots] = useState<any[]>([])
@@ -222,7 +221,7 @@ export default function AvailabilityPage() {
             {slots.map(slot => (
               <div key={slot.id} className="flex items-center justify-between py-2 border-b border-[#f0ebe3] last:border-0">
                 <span className="text-sm">
-                  {slot.day_of_week} · {slot.start_time} – {slot.end_time}
+                  {slot.day_of_week} · {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
                 </span>
                 <button
                   onClick={() => deleteSlot(slot.id)}
