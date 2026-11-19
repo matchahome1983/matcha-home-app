@@ -13,25 +13,24 @@ export default function ClientOnboarding() {
   const [grade, setGrade] = useState('')
   const [needsHouse, setNeedsHouse] = useState(false)
   const [tasks, setTasks] = useState<string[]>([])
-  const [timing, setTiming] = useState<string[]>([])
+  const [times, setTimes] = useState<string[]>([])
+  const [days, setDays] = useState<string[]>([])
+  const [frequency, setFrequency] = useState('')
+  const [oneTimeDuration, setOneTimeDuration] = useState('')
+  const [oneTimeStart, setOneTimeStart] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
   const subjectOptions = ['Math', 'Reading', 'Science', 'Writing', 'Other']
   const taskOptions = ['Laundry', 'Dishes', 'Vacuuming', 'Party help', 'Home refresh']
-  const timingOptions = ['Weekday mornings', 'Weekday afternoons', 'Weekday evenings', 'Weekends', 'Flexible']
+  const timeOptions = ['Morning', 'Midday', 'Afternoon', 'Evening']
+  const dayOptions = ['Weekdays', 'Weekends']
+  const frequencyOptions = ['Just once', 'A few times', 'Ongoing']
+  const startTimes = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM']
 
-  function toggleSubject(s: string) {
-    setSubjects(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])
-  }
-
-  function toggleTask(t: string) {
-    setTasks(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
-  }
-
-  function toggleTiming(t: string) {
-    setTiming(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+  function toggle(arr: string[], setArr: any, val: string) {
+    setArr(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val])
   }
 
   async function handleSave() {
@@ -48,7 +47,11 @@ export default function ClientOnboarding() {
       homework_grade: grade || null,
       needs_house_help: needsHouse,
       house_tasks: tasks.length > 0 ? tasks : null,
-      preferred_timing: timing.length > 0 ? timing : null,
+      preferred_times: times.length > 0 ? times : null,
+      preferred_days: days.length > 0 ? days : null,
+      preferred_frequency: frequency || null,
+      one_time_duration: oneTimeDuration || null,
+      one_time_start: oneTimeStart || null,
     }).eq('id', user.id)
 
     router.push('/dashboard')
@@ -93,7 +96,7 @@ export default function ClientOnboarding() {
                       <label className="text-sm text-gray-600">Subjects</label>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {subjectOptions.map(s => (
-                          <button key={s} type="button" onClick={() => toggleSubject(s)} className={`px-3 py-1.5 rounded-full text-xs ${subjects.includes(s) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
+                          <button key={s} type="button" onClick={() => toggle(subjects, setSubjects, s)} className={`px-3 py-1.5 rounded-full text-xs ${subjects.includes(s) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
                             {s}
                           </button>
                         ))}
@@ -118,7 +121,7 @@ export default function ClientOnboarding() {
             {needsHouse && (
               <div className="ml-6 mt-3 flex flex-wrap gap-2">
                 {taskOptions.map(t => (
-                  <button key={t} type="button" onClick={() => toggleTask(t)} className={`px-3 py-1.5 rounded-full text-xs ${tasks.includes(t) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
+                  <button key={t} type="button" onClick={() => toggle(tasks, setTasks, t)} className={`px-3 py-1.5 rounded-full text-xs ${tasks.includes(t) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
                     {t}
                   </button>
                 ))}
@@ -128,19 +131,65 @@ export default function ClientOnboarding() {
 
           {/* Timing */}
           <div>
-            <label className="font-medium block mb-2">When do you usually need help?</label>
+            <p className="font-medium mb-2">When do you need help?</p>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Time of day</p>
+                <div className="flex flex-wrap gap-2">
+                  {timeOptions.map(t => (
+                    <button key={t} type="button" onClick={() => toggle(times, setTimes, t)} className={`px-3 py-1.5 rounded-full text-xs ${times.includes(t) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Days</p>
+                <div className="flex flex-wrap gap-2">
+                  {dayOptions.map(d => (
+                    <button key={d} type="button" onClick={() => toggle(days, setDays, d)} className={`px-3 py-1.5 rounded-full text-xs ${days.includes(d) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Frequency */}
+          <div>
+            <p className="font-medium mb-2">How often?</p>
             <div className="flex flex-wrap gap-2">
-              {timingOptions.map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => toggleTiming(t)}
-                  className={`px-3 py-1.5 rounded-full text-xs ${timing.includes(t) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}
-                >
-                  {t}
+              {frequencyOptions.map(f => (
+                <button key={f} type="button" onClick={() => setFrequency(f)} className={`px-4 py-2 rounded-full text-sm ${frequency === f ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
+                  {f}
                 </button>
               ))}
             </div>
+
+            {frequency === 'Just once' && (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="text-sm text-gray-600">Duration</label>
+                  <select value={oneTimeDuration} onChange={e => setOneTimeDuration(e.target.value)} className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm mt-1">
+                    <option value="">Select</option>
+                    <option value="1 hour">1 hour</option>
+                    <option value="2 hours">2 hours</option>
+                    <option value="3 hours">3 hours</option>
+                    <option value="4 hours">4 hours</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-600">Start time</label>
+                  <select value={oneTimeStart} onChange={e => setOneTimeStart(e.target.value)} className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm mt-1">
+                    <option value="">Select</option>
+                    {startTimes.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
