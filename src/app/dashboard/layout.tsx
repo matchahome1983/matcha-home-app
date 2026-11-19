@@ -24,7 +24,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-[#fbf8f3] flex flex-col">
-      <header className="bg-white/80 backdrop-blur border-b border-[#f0ebe3] sticky top-0 z-40">
+      <header className="bg-white border-b border-[#f0ebe3] sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image 
@@ -37,7 +37,7 @@ export default async function DashboardLayout({
             />
           </Link>
 
-          <nav className="flex items-center gap-6 text-sm">
+          <nav className="flex items-center gap-6 text-sm text-[#2c2c2c]">
             {isPro ? (
               <>
                 <Link href="/dashboard" className="hover:text-[#5c7d4e]">Dashboard</Link>
@@ -69,7 +69,7 @@ export default async function DashboardLayout({
         {children}
       </main>
 
-      <footer className="border-t border-[#f0ebe3] py-6 text-center text-xs text-gray-500">
+      <footer className="border-t border-[#f0ebe3] py-6 text-center text-xs text-[#6b6b6b]">
         <p>Matcha Home connects clients with independent Pros. No employment relationship is created.</p>
         <p className="mt-1">© {new Date().getFullYear()} Matcha Home</p>
       </footer>

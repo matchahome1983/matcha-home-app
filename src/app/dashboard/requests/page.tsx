@@ -1,46 +1,73 @@
 import { createClient } from '@/lib/supabase/server'
-import RespondButtons from './respond-buttons'
+import { redirect } from 'next/navigation'
+import BookingActions from '../bookings/booking-actions'
 
 export default async function RequestsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: bookings } = await supabase.rpc('my_bookings_as_pro')
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'pro') redirect('/dashboard')
+
+  const { data: requests } = await supabase
+    .from('bookings')
+    .select(`
+      *,
+      client:profiles!bookings_client_id_fkey(full_name)
+    `)
+    .eq('pro_id', user.id)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
 
   return (
-    <div>
-      <h1 className="text-3xl font-semibold text-[#5c7d4e] mb-6">Incoming Requests</h1>
+    <div className="max-w-3xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-[#2c2c2c]">Requests</h1>
+        <p className="text-gray-500 mt-1">Pending booking requests from clients</p>
+      </div>
 
-      {!bookings || bookings.length === 0 ? (
-        <p className="text-gray-500">No requests yet.</p>
-      ) : (
+      {requests && requests.length > 0 ? (
         <div className="space-y-4">
-          {bookings.map((b: any) => (
-            <div key={b.id} className="bg-white rounded-xl p-5 shadow-sm border border-[#e8e0d5]">
-              <div className="flex justify-between items-start">
+          {requests.map((req: any) => (
+            <div key={req.id} className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3]">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold">{b.client_name || 'Client'}</p>
-                  <p className="text-sm text-gray-600">{b.client_city}</p>
+                  <p className="font-medium text-[#2c2c2c]">{req.client?.full_name}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {new Date(req.start_time).toLocaleDateString(undefined, {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                  b.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                  b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  b.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {b.status}
+                <span className="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-1 rounded-full font-medium">
+                  Pending
                 </span>
               </div>
-              <p className="mt-3 text-sm">
-                {b.requested_date} · {b.start_time} – {b.end_time}
-              </p>
-              {b.notes && <p className="text-sm text-gray-600 mt-2">Notes: {b.notes}</p>}
 
-              {b.status === 'pending' && (
-                <RespondButtons bookingId={b.id} />
+              {req.notes && (
+                <p className="text-sm text-gray-600 mt-3">{req.notes}</p>
               )}
+
+              <div className="mt-4">
+                <BookingActions bookingId={req.id} status={req.status} />
+              </div>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 bg-white rounded-2xl border border-[#f0ebe3]">
+          <p className="text-gray-500">No pending requests.</p>
         </div>
       )}
     </div>

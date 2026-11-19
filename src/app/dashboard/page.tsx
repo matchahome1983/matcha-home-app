@@ -1,89 +1,72 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-export default async function SearchPage() {
+export default async function DashboardPage() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: pros } = await supabase
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
     .from('profiles')
-    .select(`
-      id,
-      full_name,
-      city,
-      hourly_rate,
-      available_now,
-      avatar_url,
-      pro_services (
-        services (name)
-      )
-    `)
-    .eq('role', 'pro')
-    .order('full_name')
+    .select('full_name, role')
+    .eq('id', user.id)
+    .single()
+
+  const isPro = profile?.role === 'pro'
+
+  const { count: pendingCount } = await supabase
+    .from('bookings')
+    .select('*', { count: 'exact', head: true })
+    .eq(isPro ? 'pro_id' : 'client_id', user.id)
+    .eq('status', 'pending')
+
+  const { count: upcomingCount } = await supabase
+    .from('bookings')
+    .select('*', { count: 'exact', head: true })
+    .eq(isPro ? 'pro_id' : 'client_id', user.id)
+    .eq('status', 'confirmed')
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#2c2c2c]">Find Pros</h1>
-        <p className="text-gray-500 mt-1">Browse available help in your area</p>
+        <h1 className="text-2xl font-semibold text-[#2c2c2c]">
+          Welcome{profile?.full_name ? `, ${profile.full_name}` : ''}
+        </h1>
+        <p className="text-[#6b6b6b] mt-1">
+          {isPro ? 'Here’s what’s happening with your requests' : 'Here’s what’s happening with your bookings'}
+        </p>
       </div>
 
-      {pros && pros.length > 0 ? (
-        <div className="space-y-4">
-          {pros.map((pro: any) => {
-            const services = pro.pro_services?.map((ps: any) => ps.services?.name).filter(Boolean) || []
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Link href={isPro ? '/dashboard/requests' : '/dashboard/bookings'} className="block">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md transition-shadow">
+            <p className="text-sm text-[#6b6b6b]">Pending</p>
+            <p className="text-3xl font-semibold text-[#2c2c2c] mt-1">{pendingCount || 0}</p>
+            <p className="text-sm text-[#5c7d4e] mt-2 font-medium">
+              {isPro ? 'View requests →' : 'View bookings →'}
+            </p>
+          </div>
+        </Link>
 
-            return (
-              <Link key={pro.id} href={`/dashboard/pro/${pro.id}`} className="block">
-                <div className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow border border-[#f0ebe3]">
-                  <div className="flex items-start gap-4">
-                    <div className="w-16 h-16 rounded-full bg-[#f0f7ed] flex items-center justify-center text-xl font-medium text-[#5c7d4e] flex-shrink-0 overflow-hidden">
-                      {pro.avatar_url ? (
-                        <img src={pro.avatar_url} alt={pro.full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        pro.full_name?.[0] || 'P'
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold text-lg text-[#2c2c2c] truncate">{pro.full_name}</h3>
-                        {pro.available_now && (
-                          <span className="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                            Available Now
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500 mt-0.5">{pro.city || 'Location not set'}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        {pro.hourly_rate && (
-                          <span className="font-medium text-[#2c2c2c]">${pro.hourly_rate}/hr</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+        <Link href="/dashboard/bookings" className="block">
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] hover:shadow-md transition-shadow">
+            <p className="text-sm text-[#6b6b6b]">Upcoming</p>
+            <p className="text-3xl font-semibold text-[#2c2c2c] mt-1">{upcomingCount || 0}</p>
+            <p className="text-sm text-[#5c7d4e] mt-2 font-medium">View schedule →</p>
+          </div>
+        </Link>
+      </div>
 
-                  {services.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-4">
-                      {services.slice(0, 4).map((name: string) => (
-                        <span
-                          key={name}
-                          className="bg-[#f0f7ed] text-[#5c7d4e] text-xs px-2.5 py-1 rounded-full"
-                        >
-                          {name}
-                        </span>
-                      ))}
-                      {services.length > 4 && (
-                        <span className="text-xs text-gray-400 px-1 py-1">+{services.length - 4} more</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-16 bg-white rounded-2xl border border-[#f0ebe3]">
-          <p className="text-gray-500">No Pros found yet.</p>
+      {!isPro && (
+        <div className="mt-8">
+          <Link
+            href="/dashboard/search"
+            className="inline-block bg-[#5c7d4e] hover:bg-[#4a6b3e] text-white px-6 py-3 rounded-xl text-sm font-medium transition-colors"
+          >
+            Find a Pro
+          </Link>
         </div>
       )}
     </div>

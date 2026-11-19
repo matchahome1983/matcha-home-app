@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import AddToCircleButton from './add-to-circle-button'
 import BookingRequestForm from './booking-request-form'
 
@@ -36,6 +37,13 @@ export default async function ProProfilePage({
     .from('availability')
     .select('*')
     .eq('pro_id', pro.id)
+
+  const { data: reviews } = await supabase
+    .from('reviews')
+    .select('rating, comment, created_at, client:profiles!reviews_client_id_fkey(full_name)')
+    .eq('pro_id', pro.id)
+    .order('created_at', { ascending: false })
+    .limit(5)
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -77,8 +85,14 @@ export default async function ProProfilePage({
           <p className="mt-5 text-gray-700 leading-relaxed">{pro.bio}</p>
         )}
 
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 items-start">
           <AddToCircleButton proId={pro.id} />
+          <Link
+            href={`/dashboard/messages/${pro.id}`}
+            className="inline-flex items-center justify-center border border-[#5c7d4e] text-[#5c7d4e] px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#f0f7ed]"
+          >
+            Message
+          </Link>
           <BookingRequestForm proId={pro.id} />
         </div>
 
@@ -114,7 +128,7 @@ export default async function ProProfilePage({
       )}
 
       {availability && availability.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
           <h2 className="font-semibold text-[#2c2c2c] mb-4">Availability</h2>
           <div className="space-y-2">
             {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
@@ -129,6 +143,25 @@ export default async function ProProfilePage({
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {reviews && reviews.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
+          <h2 className="font-semibold text-[#2c2c2c] mb-4">Reviews</h2>
+          <div className="space-y-4">
+            {reviews.map((r: any, i: number) => (
+              <div key={i} className="border-b border-[#f0ebe3] last:border-0 pb-4 last:pb-0">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium text-sm text-[#2c2c2c]">{r.client?.full_name || 'Client'}</p>
+                  <span className="text-yellow-500 text-sm">{'★'.repeat(r.rating)}</span>
+                </div>
+                {r.comment && (
+                  <p className="text-sm text-gray-600 mt-1">{r.comment}</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
