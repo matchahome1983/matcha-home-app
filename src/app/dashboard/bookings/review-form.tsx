@@ -2,54 +2,72 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 export default function ReviewForm({ bookingId, proId }: { bookingId: string; proId: string }) {
-  const [rating, setRating] = useState(5)
+  const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
+  const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [message, setMessage] = useState('')
   const supabase = createClient()
+  const router = useRouter()
 
-  async function submit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (rating === 0) return
+
+    setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
 
-    const { error } = await supabase.from('ratings').insert({
-      booking_id: bookingId,
-      rater_id: user.id,
-      ratee_id: proId,
-      rating,
-      comment: comment || null
-    })
-
-    if (error) {
-      setMessage(error.message)
-    } else {
+    if (user) {
+      await supabase.from('reviews').insert({
+        booking_id: bookingId,
+        pro_id: proId,
+        client_id: user.id,
+        rating,
+        comment: comment.trim() || null,
+      })
       setSubmitted(true)
-      setMessage('Review submitted')
+      router.refresh()
     }
+    setLoading(false)
   }
 
-  if (submitted) return <p className="text-sm text-green-700 mt-3">{message}</p>
+  if (submitted) {
+    return (
+      <p className="text-sm text-green-700">Thanks for your review.</p>
+    )
+  }
 
   return (
-    <form onSubmit={submit} className="mt-4 pt-4 border-t">
-      <p className="text-sm font-medium mb-2">Leave a review</p>
-      <select value={rating} onChange={e => setRating(Number(e.target.value))} className="border rounded px-2 py-1 text-sm mb-2">
-        {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} stars</option>)}
-      </select>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <p className="text-sm font-medium text-[#2c2c2c]">Leave a review</p>
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            type="button"
+            onClick={() => setRating(star)}
+            className={`text-2xl ${star <= rating ? 'text-yellow-500' : 'text-gray-300'}`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
       <textarea
-        placeholder="Comment (optional)"
         value={comment}
-        onChange={e => setComment(e.target.value)}
-        className="w-full border rounded px-3 py-2 text-sm mb-2"
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="How did it go? (optional)"
         rows={2}
+        className="w-full border border-[#f0ebe3] rounded-xl px-4 py-2.5 text-sm"
       />
-      <button type="submit" className="bg-[#7a9e6a] text-white px-4 py-1.5 rounded text-sm hover:bg-[#5c7d4e]">
-        Submit Review
+      <button
+        type="submit"
+        disabled={loading || rating === 0}
+        className="bg-[#5c7d4e] text-white text-sm px-4 py-2 rounded-xl disabled:opacity-50"
+      >
+        {loading ? 'Submitting...' : 'Submit Review'}
       </button>
-      {message && <p className="text-sm mt-1 text-gray-600">{message}</p>}
     </form>
   )
 }

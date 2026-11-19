@@ -43,6 +43,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard" className="hover:text-[#5c7d4e]">Dashboard</Link>
                 <Link href="/dashboard/requests" className="hover:text-[#5c7d4e]">Requests</Link>
                 <Link href="/dashboard/availability" className="hover:text-[#5c7d4e]">Availability</Link>
+                <Link href="/dashboard/notifications" className="hover:text-[#5c7d4e]">Notifications</Link>
                 <Link href="/dashboard/profile" className="hover:text-[#5c7d4e]">Profile</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
                 <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
@@ -54,6 +55,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/circle" className="hover:text-[#5c7d4e]">Your Circle</Link>
                 <Link href="/dashboard/bookings" className="hover:text-[#5c7d4e]">My Bookings</Link>
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e]">Messages</Link>
+                <Link href="/dashboard/notifications" className="hover:text-[#5c7d4e]">Notifications</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
                 <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
               </>

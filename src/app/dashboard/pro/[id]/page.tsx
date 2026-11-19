@@ -32,6 +32,11 @@ export default async function ProProfilePage({
 
   const { data: avgRating } = await supabase.rpc('get_average_rating', { pro_id: pro.id })
 
+  const { data: availability } = await supabase
+    .from('availability')
+    .select('*')
+    .eq('pro_id', pro.id)
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
@@ -96,7 +101,7 @@ export default async function ProProfilePage({
       )}
 
       {certs && certs.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
           <h2 className="font-semibold text-[#2c2c2c] mb-3">Certifications</h2>
           <div className="flex flex-wrap gap-2">
             {certs.map((c: any) => (
@@ -104,6 +109,26 @@ export default async function ProProfilePage({
                 {c.certifications.name}
               </span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {availability && availability.length > 0 && (
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
+          <h2 className="font-semibold text-[#2c2c2c] mb-4">Availability</h2>
+          <div className="space-y-2">
+            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+              const daySlots = availability.filter((a: any) => a.day_of_week === day)
+              if (daySlots.length === 0) return null
+              return (
+                <div key={day} className="flex justify-between text-sm">
+                  <span className="text-gray-600">{day}</span>
+                  <span className="text-[#2c2c2c]">
+                    {daySlots.map((s: any) => `${s.start_time.slice(0, 5)} – ${s.end_time.slice(0, 5)}`).join(', ')}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

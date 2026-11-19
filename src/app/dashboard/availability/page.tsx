@@ -1,40 +1,34 @@
-'use client'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import AvailabilityEditor from './availability-editor'
 
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+export default async function AvailabilityPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-export default function AvailabilityPage() {
-  const [availableNow, setAvailableNow] = useState(false)
-  const [message, setMessage] = useState('')
-  const supabase = createClient()
+  if (!user) redirect('/login')
 
-  async function toggleAvailableNow() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
 
-    const on = !availableNow
-    await supabase.from('profiles').update({
-      available_now: on,
-      available_now_until: on ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null
-    }).eq('id', user.id)
+  if (profile?.role !== 'pro') redirect('/dashboard')
 
-    setAvailableNow(on)
-    setMessage(on ? 'You are Available Now for 2 hours' : 'Available Now turned off')
-  }
+  const { data: availability } = await supabase
+    .from('availability')
+    .select('*')
+    .eq('pro_id', user.id)
 
   return (
-    <div>
-      <h1 className="text-3xl font-semibold text-[#5c7d4e] mb-6">Availability</h1>
-
-      <div className="bg-white rounded-xl p-6 shadow-sm max-w-md">
-        <button
-          onClick={toggleAvailableNow}
-          className={`px-5 py-3 rounded-lg font-medium ${availableNow ? 'bg-red-100 text-red-800' : 'bg-[#7a9e6a] text-white'}`}
-        >
-          {availableNow ? 'Turn Off Available Now' : 'Set Available Now (2 hrs)'}
-        </button>
-        {message && <p className="text-sm mt-4 text-gray-600">{message}</p>}
+    <div className="max-w-3xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-[#2c2c2c]">Availability</h1>
+        <p className="text-gray-500 mt-1">Set the hours you’re available each week</p>
       </div>
+
+      <AvailabilityEditor existing={availability || []} proId={user.id} />
     </div>
   )
 }

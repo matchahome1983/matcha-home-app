@@ -9,41 +9,54 @@ export default function BookingActions({ bookingId, status }: { bookingId: strin
   const supabase = createClient()
   const router = useRouter()
 
-  async function cancel() {
-    if (!confirm('Cancel this booking?')) return
+  async function updateStatus(newStatus: string) {
     setLoading(true)
-    const { data } = await supabase.rpc('cancel_booking', { booking_id: bookingId })
-    setLoading(false)
-    alert(data ? `Cancelled. Fee: $${data}` : 'Cancelled')
-    router.refresh()
-  }
-
-  async function complete() {
-    setLoading(true)
-    await supabase.rpc('mark_booking_completed', { booking_id: bookingId })
+    await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId)
     setLoading(false)
     router.refresh()
   }
 
-  return (
-    <div className="flex gap-2 mt-4">
-      {status === 'accepted' && (
+  if (status === 'pending') {
+    return (
+      <div className="flex gap-2">
         <button
-          onClick={complete}
+          onClick={() => updateStatus('confirmed')}
           disabled={loading}
-          className="bg-[#7a9e6a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#5c7d4e] disabled:opacity-50"
+          className="bg-[#5c7d4e] text-white text-sm px-4 py-2 rounded-xl disabled:opacity-50"
         >
-          Mark Completed
+          Accept
         </button>
-      )}
-      <button
-        onClick={cancel}
-        disabled={loading}
-        className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-300 disabled:opacity-50"
-      >
-        Cancel
-      </button>
-    </div>
-  )
-}
+        <button
+          onClick={() => updateStatus('cancelled')}
+          disabled={loading}
+          className="border border-gray-300 text-sm px-4 py-2 rounded-xl disabled:opacity-50"
+        >
+          Decline
+        </button>
+      </div>
+    )
+  }
 
+  if (status === 'confirmed') {
+    return (
+      <div className="flex gap-2">
+        <button
+          onClick={() => updateStatus('completed')}
+          disabled={loading}
+          className="bg-[#5c7d4e] text-white text-sm px-4 py-2 rounded-xl disabled:opacity-50"
+        >
+          Mark Complete
+        </button>
+        <button
+          onClick={() => updateStatus('cancelled')}
+          disabled={loading}
+          className="border border-gray-300 text-sm px-4 py-2 rounded-xl disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+    )
+  }
+
+  return null
+}
