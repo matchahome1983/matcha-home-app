@@ -12,6 +12,10 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('')
   const [isStudent, setIsStudent] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [services, setServices] = useState<any[]>([])
+  const [selectedServices, setSelectedServices] = useState<string[]>([])
+  const [certs, setCerts] = useState<any[]>([])
+  const [selectedCerts, setSelectedCerts] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const supabase = createClient()
@@ -37,9 +41,39 @@ export default function ProfilePage() {
         setIsStudent(profile.is_student || false)
         setAvatarUrl(profile.avatar_url || '')
       }
+
+      const { data: allServices } = await supabase.from('services').select('*').order('name')
+      setServices(allServices || [])
+
+      const { data: proServices } = await supabase
+        .from('pro_services')
+        .select('service_id')
+        .eq('pro_id', user.id)
+      setSelectedServices(proServices?.map(s => s.service_id) || [])
+
+      const { data: allCerts } = await supabase.from('certifications').select('*').order('name')
+      setCerts(allCerts || [])
+
+      const { data: proCerts } = await supabase
+        .from('pro_certifications')
+        .select('certification_id')
+        .eq('pro_id', user.id)
+      setSelectedCerts(proCerts?.map(c => c.certification_id) || [])
     }
     load()
   }, [])
+
+  function toggleService(id: string) {
+    setSelectedServices(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  function toggleCert(id: string) {
+    setSelectedCerts(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -49,7 +83,7 @@ export default function ProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { error } = await supabase
+    await supabase
       .from('profiles')
       .update({
         full_name: fullName,
@@ -61,12 +95,24 @@ export default function ProfilePage() {
       })
       .eq('id', user.id)
 
-    if (error) {
-      setMessage('Error saving profile')
-    } else {
-      setMessage('Profile saved')
-      router.refresh()
+    // Update services
+    await supabase.from('pro_services').delete().eq('pro_id', user.id)
+    if (selectedServices.length > 0) {
+      await supabase.from('pro_services').insert(
+        selectedServices.map(id => ({ pro_id: user.id, service_id: id }))
+      )
     }
+
+    // Update certifications
+    await supabase.from('pro_certifications').delete().eq('pro_id', user.id)
+    if (selectedCerts.length > 0) {
+      await supabase.from('pro_certifications').insert(
+        selectedCerts.map(id => ({ pro_id: user.id, certification_id: id }))
+      )
+    }
+
+    setMessage('Profile saved')
+    router.refresh()
     setLoading(false)
   }
 
@@ -98,7 +144,7 @@ export default function ProfilePage() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-semibold text-[#2c2c2c] mb-6">Edit Profile</h1>
 
-      <form onSubmit={handleSave} className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] space-y-4">
+      <form onSubmit={handleSave} className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] space-y-5">
         <div>
           <label className="text-sm font-medium text-[#2c2c2c] block mb-2">Profile photo</label>
           {avatarUrl && (
@@ -163,6 +209,46 @@ export default function ProfilePage() {
             rows={4}
             className="w-full border border-[#f0ebe3] rounded-xl px-4 py-2.5 text-sm"
           />
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-[#2c2c2c] block mb-2">Services I can help with</label>
+          <div className="flex flex-wrap gap-2">
+            {services.map(s => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => toggleService(s.id)}
+                className={`px-3 py-1.5 rounded-full text-sm ${
+                  selectedServices.includes(s.id)
+                    ? 'bg-[#5c7d4e] text-white'
+                    : 'border border-[#f0ebe3]'
+                }`}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-[#2c2c2c] block mb-2">Certifications</label>
+          <div className="flex flex-wrap gap-2">
+            {certs.map(c => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => toggleCert(c.id)}
+                className={`px-3 py-1.5 rounded-full text-sm ${
+                  selectedCerts.includes(c.id)
+                    ? 'bg-[#5c7d4e] text-white'
+                    : 'border border-[#f0ebe3]'
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         <label className="flex items-center gap-2 text-sm">
