@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import MessageForm from './message-form'
+import Chat from './chat'
 
 export default async function ConversationPage({
   params,
@@ -22,6 +22,14 @@ export default async function ConversationPage({
 
   if (!otherUser) notFound()
 
+  // Mark messages as read
+  await supabase
+    .from('messages')
+    .update({ read_at: new Date().toISOString() })
+    .eq('receiver_id', user.id)
+    .eq('sender_id', otherUserId)
+    .is('read_at', null)
+
   const { data: messages } = await supabase
     .from('messages')
     .select('*')
@@ -37,32 +45,11 @@ export default async function ConversationPage({
         <h1 className="text-xl font-semibold text-[#2c2c2c] mt-2">{otherUser.full_name}</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-white rounded-2xl border border-[#f0ebe3] p-4 space-y-3">
-        {messages && messages.length > 0 ? (
-          messages.map((msg: any) => {
-            const isMine = msg.sender_id === user.id
-            return (
-              <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-xs px-4 py-2.5 rounded-2xl text-sm ${
-                    isMine
-                      ? 'bg-[#5c7d4e] text-white'
-                      : 'bg-[#f0f7ed] text-[#2c2c2c]'
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            )
-          })
-        ) : (
-          <p className="text-center text-gray-400 text-sm py-8">No messages yet. Say hello.</p>
-        )}
-      </div>
-
-      <div className="mt-4">
-        <MessageForm receiverId={otherUserId} />
-      </div>
+      <Chat 
+        initialMessages={messages || []} 
+        currentUserId={user.id} 
+        otherUserId={otherUserId} 
+      />
     </div>
   )
 }

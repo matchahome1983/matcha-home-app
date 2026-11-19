@@ -22,6 +22,13 @@ export default async function DashboardLayout({
 
   const isPro = profile?.role === 'pro'
 
+  // Count unread messages (simple version: messages where user is receiver and not yet read)
+  const { count: unreadCount } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('receiver_id', user.id)
+    .is('read_at', null)
+
   return (
     <div className="min-h-screen bg-[#fbf8f3] flex flex-col">
       <header className="bg-white border-b border-[#f0ebe3] sticky top-0 z-40">
@@ -54,7 +61,14 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/search" className="hover:text-[#5c7d4e]">Find Pros</Link>
                 <Link href="/dashboard/circle" className="hover:text-[#5c7d4e]">Your Circle</Link>
                 <Link href="/dashboard/bookings" className="hover:text-[#5c7d4e]">My Bookings</Link>
-                <Link href="/dashboard/messages" className="hover:text-[#5c7d4e]">Messages</Link>
+                <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
+                  Messages
+                  {unreadCount && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-3 bg-[#5c7d4e] text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
                 <Link href="/dashboard/notifications" className="hover:text-[#5c7d4e]">Notifications</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
                 <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>

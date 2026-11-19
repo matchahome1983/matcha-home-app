@@ -32,17 +32,19 @@ export default function SearchPage() {
         hourly_rate,
         available_now,
         avatar_url,
+        updated_at,
         pro_services (
           services (name)
         )
       `)
       .eq('role', 'pro')
+      .order('updated_at', { ascending: false })
 
     if (availableNow) {
       query = query.eq('available_now', true)
     }
 
-    const { data } = await query.order('full_name')
+    const { data } = await query
     let filtered = data || []
 
     if (selectedService) {
@@ -117,6 +119,11 @@ export default function SearchPage() {
                         )}
                       </div>
                       <p className="text-sm text-gray-500 mt-0.5">{pro.city || 'Location not set'}</p>
+                      {pro.updated_at && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Active {new Date(pro.updated_at).toLocaleDateString()}
+                        </p>
+                      )}
                       <div className="flex items-center gap-3 mt-2">
                         {pro.hourly_rate && (
                           <span className="font-medium text-[#2c2c2c]">${pro.hourly_rate}/hr</span>
