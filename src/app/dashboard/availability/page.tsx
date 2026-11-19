@@ -19,6 +19,7 @@ export default function AvailabilityPage() {
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('17:00')
+  const [availableNow, setAvailableNow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const supabase = createClient()
@@ -38,6 +39,13 @@ export default function AvailabilityPage() {
       .order('day_of_week')
 
     setSlots(data || [])
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('available_now')
+      .eq('id', user.id)
+      .single()
+    setAvailableNow(profile?.available_now || false)
   }
 
   function toggleDay(day: string) {
@@ -57,6 +65,14 @@ export default function AvailabilityPage() {
   function applyPreset(preset: { start: string; end: string }) {
     setStartTime(preset.start)
     setEndTime(preset.end)
+  }
+
+  async function toggleAvailableNow() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const newVal = !availableNow
+    setAvailableNow(newVal)
+    await supabase.from('profiles').update({ available_now: newVal }).eq('id', user.id)
   }
 
   async function addSlots() {
@@ -107,6 +123,17 @@ export default function AvailabilityPage() {
       <h1 className="text-2xl font-semibold text-[#2c2c2c] mb-6">Availability</h1>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
+        <button
+          onClick={toggleAvailableNow}
+          className={`mb-4 px-5 py-2.5 rounded-xl text-sm font-medium ${
+            availableNow
+              ? 'bg-green-100 text-green-800'
+              : 'border border-[#f0ebe3] text-gray-600'
+          }`}
+        >
+          {availableNow ? 'Available Now ✓' : 'Set Available Now'}
+        </button>
+
         <h2 className="font-medium text-[#2c2c2c] mb-4">Add availability</h2>
 
         <div className="flex gap-2 mb-3">

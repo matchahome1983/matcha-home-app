@@ -1,31 +1,53 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-export default async function DashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default function DashboardPage() {
+  const [profile, setProfile] = useState<any>(null)
+  const [suggestedPros, setSuggestedPros] = useState<any[]>([])
+  const supabase = createClient()
+  const router = useRouter()
 
-  if (!user) redirect('/login')
+  useEffect(() => {
+    load()
+  }, [])
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  async function load() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-  const isPro = profile?.role === 'pro'
-  const isNewUser = profile?.created_at && (Date.now() - new Date(profile.created_at).getTime()) < 24 * 60 * 60 * 1000
-
-  let suggestedPros: any[] = []
-  if (!isPro && profile?.preferred_timing && profile.preferred_timing.length > 0) {
-    const { data: pros } = await supabase
+    const { data } = await supabase
       .from('profiles')
-      .select('id, full_name, city, hourly_rate, available_now, avatar_url')
-      .eq('role', 'pro')
-      .limit(4)
-    suggestedPros = pros || []
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    setProfile(data)
+
+    if (data?.role !== 'pro' && data?.preferred_times?.length > 0) {
+      const { data: pros } = await supabase
+        .from('profiles')
+        .select('id, full_name, city, hourly_rate, available_now, avatar_url')
+        .eq('role', 'pro')
+        .limit(4)
+      setSuggestedPros(pros || [])
+    }
   }
+
+  async function toggleAvailableNow() {
+    if (!profile) return
+    const newVal = !profile.available_now
+    await supabase.from('profiles').update({ available_now: newVal }).eq('id', profile.id)
+    setProfile({ ...profile, available_now: newVal })
+  }
+
+  if (!profile) return null
+
+  const isPro = profile.role === 'pro'
+  const isNewUser = profile.created_at && (Date.now() - new Date(profile.created_at).getTime()) < 24 * 60 * 60 * 1000
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -42,12 +64,27 @@ export default async function DashboardPage() {
 
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-[#2c2c2c]">
-          Welcome{profile?.full_name ? `, ${profile.full_name}` : ''}
+          Welcome{profile.full_name ? `, ${profile.full_name}` : ''}
         </h1>
         <p className="text-gray-500 mt-1">
           {isPro ? 'Manage your availability and requests' : 'Find help when you need it'}
         </p>
       </div>
+
+      {isPro && (
+        <div className="mb-6">
+          <button
+            onClick={toggleAvailableNow}
+            className={`px-5 py-2.5 rounded-xl text-sm font-medium ${
+              profile.available_now
+                ? 'bg-green-100 text-green-800'
+                : 'border border-[#f0ebe3] text-gray-600'
+            }`}
+          >
+            {profile.available_now ? 'Available Now ✓' : 'Set Available Now'}
+          </button>
+        </div>
+      )}
 
       {isPro ? (
         <div className="grid sm:grid-cols-2 gap-4">
