@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import AddToCircleButton from './add-to-circle-button'
 import BookingRequestForm from './booking-request-form'
+import AvailabilityCalendar from './availability-calendar'
 
 export default async function ProProfilePage({
   params,
@@ -62,6 +63,9 @@ export default async function ProProfilePage({
               <div>
                 <h1 className="text-2xl font-semibold text-[#2c2c2c]">{pro.full_name}</h1>
                 <p className="text-gray-500 mt-0.5">{pro.city || 'Location not set'}</p>
+                {pro.response_time && (
+                  <p className="text-sm text-gray-500 mt-1">{pro.response_time}</p>
+                )}
               </div>
               {pro.available_now && (
                 <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full whitespace-nowrap">
@@ -128,22 +132,8 @@ export default async function ProProfilePage({
       )}
 
       {availability && availability.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
-          <h2 className="font-semibold text-[#2c2c2c] mb-4">Availability</h2>
-          <div className="space-y-2">
-            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
-              const daySlots = availability.filter((a: any) => a.day_of_week === day)
-              if (daySlots.length === 0) return null
-              return (
-                <div key={day} className="flex justify-between text-sm">
-                  <span className="text-gray-600">{day}</span>
-                  <span className="text-[#2c2c2c]">
-                    {daySlots.map((s: any) => `${s.start_time.slice(0, 5)} – ${s.end_time.slice(0, 5)}`).join(', ')}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
+        <div className="mb-6">
+          <AvailabilityCalendar availability={availability} />
         </div>
       )}
 
