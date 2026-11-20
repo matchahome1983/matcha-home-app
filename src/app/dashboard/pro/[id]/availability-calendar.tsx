@@ -23,6 +23,8 @@ export default function AvailabilityCalendar({ proId, availability }: { proId: s
     if (grouped[slot.day_of_week]) grouped[slot.day_of_week].push(slot)
   })
 
+  const availableDays = dayOrder.filter(day => grouped[day].length > 0)
+
   const blocks = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM']
 
   async function book(time: string) {
@@ -48,24 +50,24 @@ export default function AvailabilityCalendar({ proId, availability }: { proId: s
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] mb-6">
       <h2 className="font-semibold text-[#2c2c2c] mb-4">Availability</h2>
 
-      <div className="space-y-3 mb-6">
-        {dayOrder.map(day => (
-          <div key={day} className="flex items-start gap-3">
-            <div className="w-10 text-sm font-medium text-gray-500 pt-1.5">{shortDays[day]}</div>
-            <div className="flex-1 flex flex-wrap gap-2">
-              {grouped[day].length > 0 ? (
-                grouped[day].map((slot, i) => (
+      {availableDays.length > 0 ? (
+        <div className="space-y-3 mb-6">
+          {availableDays.map(day => (
+            <div key={day} className="flex items-start gap-3">
+              <div className="w-10 text-sm font-medium text-gray-500 pt-1.5">{shortDays[day]}</div>
+              <div className="flex-1 flex flex-wrap gap-2">
+                {grouped[day].map((slot, i) => (
                   <span key={i} className="bg-[#f0f7ed] text-[#5c7d4e] text-sm px-3 py-1.5 rounded-lg">
                     {slot.start_time?.slice(0, 5)} – {slot.end_time?.slice(0, 5)}
                   </span>
-                ))
-              ) : (
-                <span className="text-sm text-gray-400 py-1.5">Unavailable</span>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 mb-6">No availability set yet</p>
+      )}
 
       <div className="border-t border-[#f0ebe3] pt-5">
         <p className="text-sm font-medium mb-3">Book a time</p>
