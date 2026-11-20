@@ -5,13 +5,14 @@ import Image from 'next/image'
 import AddToCircleButton from './add-to-circle-button'
 import AvailabilityCalendar from './availability-calendar'
 
-export default async function ProProfilePage({ params }: { params: { id: string } }) {
+export default async function ProProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
 
   const { data: pro } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('role', 'pro')
     .single()
 
