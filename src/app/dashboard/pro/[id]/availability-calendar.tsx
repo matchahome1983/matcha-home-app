@@ -13,6 +13,9 @@ export default function AvailabilityCalendar({
 }) {
   const [loading, setLoading] = useState(false)
   const [confirm, setConfirm] = useState<{ date: Date; time: string } | null>(null)
+  const [customOpen, setCustomOpen] = useState(false)
+  const [customDate, setCustomDate] = useState('')
+  const [customTime, setCustomTime] = useState('')
   const supabase = createClient()
   const router = useRouter()
 
@@ -20,7 +23,7 @@ export default function AvailabilityCalendar({
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 21; i++) {
     const d = new Date(today)
     d.setDate(today.getDate() + i)
     const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
@@ -42,14 +45,13 @@ export default function AvailabilityCalendar({
     return acc
   }, {})
 
-  async function confirmBook() {
-    if (!confirm) return
+  async function confirmBook(date: Date, time: string) {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const [h, m] = confirm.time.split(':').map(Number)
-    const start = new Date(confirm.date)
+    const [h, m] = time.split(':').map(Number)
+    const start = new Date(date)
     start.setHours(h, m, 0, 0)
 
     const { error } = await supabase.from('bookings').insert({
@@ -64,35 +66,75 @@ export default function AvailabilityCalendar({
 
     setLoading(false)
     setConfirm(null)
+    setCustomOpen(false)
   }
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] mb-6">
-      <h2 className="font-semibold mb-1">Book a time</h2>
-      <p className="text-sm text-gray-500 mb-4">Based on this Pro’s availability</p>
+      <h2 className="font-semibold mb-1">Available times</h2>
+      <p className="text-sm text-gray-500 mb-4">Only days and times this Pro has set</p>
 
       {Object.keys(grouped).length === 0 ? (
-        <p className="text-sm text-gray-500">No availability set yet.</p>
+        <p className="text-sm text-gray-500 mb-4">No availability set yet.</p>
       ) : (
-        Object.entries(grouped).map(([dateStr, daySlots]: any) => (
-          <div key={dateStr} className="mb-4">
-            <p className="text-sm font-medium mb-2">
-              {new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {daySlots.map((slot: any, i: number) => (
-                <button
-                  key={i}
-                  onClick={() => setConfirm({ date: slot.date, time: slot.time })}
-                  className="border border-[#f0ebe3] rounded-xl py-2.5 text-sm hover:bg-[#f0f7ed]"
-                >
-                  {slot.time}
-                </button>
-              ))}
+        <div className="space-y-5">
+          {Object.entries(grouped).map(([dateStr, daySlots]: any) => (
+            <div key={dateStr}>
+              <p className="text-sm font-medium mb-2">
+                {new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {daySlots.map((slot: any, i: number) => (
+                  <button
+                    key={i}
+                    onClick={() => setConfirm({ date: slot.date, time: slot.time })}
+                    className="border border-[#f0ebe3] rounded-xl px-4 py-2 text-sm hover:bg-[#f0f7ed]"
+                  >
+                    {slot.time}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
+
+      <div className="mt-6 pt-4 border-t border-[#f0ebe3]">
+        <button
+          onClick={() => setCustomOpen(!customOpen)}
+          className="text-sm text-[#5c7d4e] font-medium"
+        >
+          Request a custom time
+        </button>
+
+        {customOpen && (
+          <div className="mt-3 flex flex-col sm:flex-row gap-3">
+            <input
+              type="date"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+              className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm flex-1"
+            />
+            <input
+              type="time"
+              value={customTime}
+              onChange={(e) => setCustomTime(e.target.value)}
+              className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm flex-1"
+            />
+            <button
+              onClick={() => {
+                if (customDate && customTime) {
+                  confirmBook(new Date(customDate), customTime)
+                }
+              }}
+              disabled={loading || !customDate || !customTime}
+              className="bg-[#5c7d4e] text-white rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50"
+            >
+              {loading ? 'Sending…' : 'Request'}
+            </button>
+          </div>
+        )}
+      </div>
 
       {confirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -104,7 +146,7 @@ export default function AvailabilityCalendar({
             <div className="flex gap-3">
               <button onClick={() => setConfirm(null)} className="flex-1 border rounded-xl py-2.5 text-sm">Cancel</button>
               <button
-                onClick={confirmBook}
+                onClick={() => confirmBook(confirm.date, confirm.time)}
                 disabled={loading}
                 className="flex-1 bg-[#5c7d4e] text-white rounded-xl py-2.5 text-sm font-medium disabled:opacity-50"
               >
