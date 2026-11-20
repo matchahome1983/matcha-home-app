@@ -8,23 +8,25 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
   const [customDate, setCustomDate] = useState('')
   const [customTime, setCustomTime] = useState('')
   const [loading, setLoading] = useState(false)
+  const [confirm, setConfirm] = useState<{ date: Date; time: string } | null>(null)
   const supabase = createClient()
   const router = useRouter()
 
   const blocks = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM']
 
-  // Next 4 days
   const upcoming = Array.from({ length: 4 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() + i + 1)
     return d
   })
 
-  async function book(date: Date, time: string) {
+  async function confirmBook() {
+    if (!confirm) return
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
+    const { date, time } = confirm
     const [hours, minutes] = time.replace(' AM', '').replace(' PM', '').split(':')
     let h = parseInt(hours)
     if (time.includes('PM') && h !== 12) h += 12
@@ -42,6 +44,7 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
     })
 
     setLoading(false)
+    setConfirm(null)
     router.push('/dashboard/bookings')
   }
 
@@ -60,7 +63,7 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
               {blocks.map((time) => (
                 <button
                   key={time}
-                  onClick={() => book(date, time)}
+                  onClick={() => setConfirm({ date, time })}
                   disabled={loading}
                   className="border border-[#f0ebe3] rounded-xl py-2.5 text-sm hover:bg-[#f0f7ed] disabled:opacity-50"
                 >
@@ -90,8 +93,7 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
           <button
             onClick={() => {
               if (customDate && customTime) {
-                const d = new Date(customDate)
-                book(d, customTime)
+                setConfirm({ date: new Date(customDate), time: customTime })
               }
             }}
             disabled={loading || !customDate || !customTime}
@@ -101,6 +103,32 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
           </button>
         </div>
       </div>
+
+      {confirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="font-semibold text-lg mb-2">Confirm booking</h3>
+            <p className="text-sm text-gray-600 mb-5">
+              Book for {confirm.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at {confirm.time}?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirm(null)}
+                className="flex-1 border border-[#f0ebe3] rounded-xl py-2.5 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmBook}
+                disabled={loading}
+                className="flex-1 bg-[#5c7d4e] text-white rounded-xl py-2.5 text-sm font-medium disabled:opacity-50"
+              >
+                {loading ? 'Booking…' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
