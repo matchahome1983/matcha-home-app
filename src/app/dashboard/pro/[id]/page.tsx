@@ -33,51 +33,48 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
 
   const { data: availability } = await supabase
     .from('availability')
-    .select('day_of_week, start_time')
+    .select('day_of_week, start_time, end_time')
     .eq('pro_id', pro.id)
 
   return (
     <div className="max-w-3xl mx-auto">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
         <div className="flex items-start gap-4">
-          <div className="w-20 h-20 rounded-full bg-[#f0f7ed] flex items-center justify-center text-2xl font-medium text-[#5c7d4e] overflow-hidden flex-shrink-0">
+          <div className="w-20 h-20 rounded-full bg-[#f0f7ed] flex items-center justify-center text-2xl font-medium text-[#5c7d4e] overflow-hidden">
             {pro.avatar_url ? (
-              <Image src={pro.avatar_url} alt={pro.full_name} width={80} height={80} className="object-cover w-full h-full" />
+              <Image src={pro.avatar_url} alt={pro.full_name || 'Pro'} width={80} height={80} className="object-cover" />
             ) : (
-              pro.full_name?.[0] || 'P'
+              (pro.full_name || 'P').charAt(0)
             )}
           </div>
-
           <div className="flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <h1 className="text-2xl font-semibold text-[#2c2c2c]">{pro.full_name}</h1>
-              {pro.available_now && (
-                <span className="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full">Available Now</span>
-              )}
+            <h1 className="text-2xl font-semibold text-[#2c2c2c]">{pro.full_name}</h1>
+            <p className="text-gray-500">{pro.city}</p>
+            <div className="flex items-center gap-3 mt-1">
+              {avgRating && <span className="text-sm font-medium">★ {Number(avgRating).toFixed(1)}</span>}
+              {pro.hourly_rate && <span className="text-sm text-gray-600">${pro.hourly_rate}/hr</span>}
             </div>
-            <p className="text-gray-500 mt-1">{pro.city}</p>
-            {avgRating > 0 && (
-              <p className="text-sm font-medium mt-1">★ {avgRating}</p>
-            )}
-            {pro.hourly_rate && (
-              <p className="font-medium mt-1">${pro.hourly_rate}/hr</p>
-            )}
-            {pro.bio && <p className="text-sm text-gray-600 mt-3">{pro.bio}</p>}
+            {pro.bio && <p className="mt-3 text-gray-700 text-sm">{pro.bio}</p>}
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 mt-5">
+        <div className="flex gap-2 mt-5">
           <AddToCircleButton proId={pro.id} />
-          <Link href={`/dashboard/messages/${pro.id}`} className="border border-[#f0ebe3] px-4 py-2 rounded-xl text-sm">
+          <Link href={`/dashboard/messages?with=${pro.id}`} className="px-4 py-2 border border-[#f0ebe3] rounded-xl text-sm">
             Message
           </Link>
-          <Link href={`/dashboard/pro/${pro.id}`} className="border border-[#f0ebe3] px-4 py-2 rounded-xl text-sm">
+          <button className="px-4 py-2 border border-[#f0ebe3] rounded-xl text-sm">
             Share this Pro
-          </Link>
+          </button>
         </div>
       </div>
 
-      <AvailabilityCalendar proId={pro.id} availability={availability || []} />
+      <AvailabilityCalendar
+        proId={pro.id}
+        availability={availability || []}
+        availableNow={!!pro.available_now}
+        city={pro.city}
+      />
 
       {services && services.length > 0 && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] mb-6">
