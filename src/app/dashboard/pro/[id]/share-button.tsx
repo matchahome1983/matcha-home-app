@@ -12,7 +12,6 @@ export default function ShareButton() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea')
       textArea.value = url
       document.body.appendChild(textArea)
@@ -27,7 +26,7 @@ export default function ShareButton() {
   return (
     <button
       onClick={handleShare}
-      className="text-sm border border-[#f0ebe3] px-4 py-2 rounded-xl hover:bg-gray-50"
+      className="text-sm border border-[#f0ebe3] text-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-50 font-medium"
     >
       {copied ? 'Copied!' : 'Share this Pro'}
     </button>

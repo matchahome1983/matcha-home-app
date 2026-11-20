@@ -58,7 +58,7 @@ export default async function ProProfilePage({
           <img src={pro.avatar_url} alt={pro.full_name} className="w-20 h-20 rounded-full object-cover mb-4" />
         )}
 
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start gap-4">
           <div>
             <h1 className="text-3xl font-semibold text-[#5c7d4e]">{pro.full_name}</h1>
             <p className="text-gray-600 mt-1">{pro.city}</p>
@@ -80,10 +80,10 @@ export default async function ProProfilePage({
               )}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 justify-end">
             <Link
               href={`/dashboard/messages/${pro.id}`}
-              className="text-sm bg-[#5c7d4e] text-white px-4 py-2 rounded-xl hover:bg-[#4a6b3e]"
+              className="text-sm bg-[#5c7d4e] text-white px-4 py-2.5 rounded-xl hover:bg-[#4a6b3e] font-medium"
             >
               Message
             </Link>

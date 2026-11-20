@@ -42,7 +42,7 @@ export default function InviteButton({ proId, proName }: { proId: string; proNam
     <button
       onClick={handleInvite}
       disabled={loading}
-      className="text-sm border border-[#f0ebe3] px-4 py-2 rounded-xl hover:bg-gray-50 disabled:opacity-50"
+      className="text-sm border border-[#f0ebe3] text-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-50 font-medium disabled:opacity-50"
     >
       {copied ? 'Invite link copied!' : 'Invite to this Pro'}
     </button>
