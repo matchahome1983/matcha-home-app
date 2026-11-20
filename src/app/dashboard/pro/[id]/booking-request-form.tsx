@@ -27,6 +27,7 @@ export default function BookingRequestForm({
   const [customEnd, setCustomEnd] = useState('')
   const [notes, setNotes] = useState('')
   const [isRecurring, setIsRecurring] = useState(false)
+  const [instantBook, setInstantBook] = useState(false)
   const [loading, setLoading] = useState(false)
   const [bookedSlots, setBookedSlots] = useState<any[]>([])
   const supabase = createClient()
@@ -67,7 +68,12 @@ export default function BookingRequestForm({
     let startTime: string
     let endTime: string
 
-    if (customDate && customStart && customEnd) {
+    if (instantBook && availableNow) {
+      const now = new Date()
+      const end = new Date(now.getTime() + 2 * 60 * 60 * 1000)
+      startTime = now.toISOString()
+      endTime = end.toISOString()
+    } else if (customDate && customStart && customEnd) {
       if (isBooked(customDate, customStart, customEnd)) {
         alert('That time is already booked.')
         setLoading(false)
@@ -93,6 +99,8 @@ export default function BookingRequestForm({
       return
     }
 
+    const status = (instantBook && availableNow) ? 'confirmed' : 'pending'
+
     const { error } = await supabase.from('bookings').insert({
       client_id: user.id,
       pro_id: proId,
@@ -100,23 +108,54 @@ export default function BookingRequestForm({
       end_time: endTime,
       notes,
       is_recurring: isRecurring,
-      status: 'pending',
+      status,
     })
 
     if (!error) {
+      await supabase.from('notifications').insert({
+        user_id: proId,
+        title: instantBook ? 'New Instant Booking' : 'New Booking Request',
+        body: instantBook
+          ? 'A client just booked you for the next 2 hours.'
+          : 'A client sent you a booking request.',
+        link: '/dashboard/requests',
+      })
       router.push('/dashboard/bookings?sent=true')
     }
     setLoading(false)
   }
 
   const canSubmit = Boolean(
-    (selectedDay || (customDate && customStart && customEnd)) &&
-    !(customDate && customStart && customEnd && isBooked(customDate, customStart, customEnd))
-  )
+    instantBook ||
+    selectedDay ||
+    (customDate && customStart && customEnd)
+  ) && !(customDate && customStart && customEnd && isBooked(customDate, customStart, customEnd))
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
       <h2 className="font-semibold mb-4">Request booking</h2>
+
+      {availableNow && (
+        <div className="mb-4 p-3 bg-green-50 rounded-xl border border-green-100">
+          <label className="flex items-center gap-2 text-sm font-medium text-green-800">
+            <input
+              type="checkbox"
+              checked={instantBook}
+              onChange={e => {
+                setInstantBook(e.target.checked)
+                if (e.target.checked) {
+                  setSelectedDay('')
+                  setCustomDate('')
+                  setCustomStart('')
+                  setCustomEnd('')
+                }
+              }}
+            />
+            Instant Book (starts now, 2 hours)
+          </label>
+          <p className="text-xs text-green-700 mt-1">This Pro is Available Now. Instant Book confirms immediately.</p>
+        </div>
+      )}
 
       {availability.length > 0 && (
         <div className="mb-4">
@@ -131,52 +170,56 @@ export default function BookingRequestForm({
         </div>
       )}
 
-      <div className="mb-4">
-        <p className="text-sm text-gray-600 mb-2">Or pick a quick day</p>
-        <div className="flex flex-wrap gap-2">
-          {upcomingDays.map(day => (
-            <button
-              key={day}
-              type="button"
-              onClick={() => { setSelectedDay(day); setCustomDate(''); setCustomStart(''); setCustomEnd('') }}
-              className={`px-3 py-1.5 rounded-full text-sm border ${
-                selectedDay === day
-                  ? 'bg-[#5c7d4e] text-white border-[#5c7d4e]'
-                  : 'border-[#f0ebe3] text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              {day}
-            </button>
-          ))}
-        </div>
-      </div>
+      {!instantBook && (
+        <>
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">Or pick a quick day</p>
+            <div className="flex flex-wrap gap-2">
+              {upcomingDays.map(day => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => { setSelectedDay(day); setCustomDate(''); setCustomStart(''); setCustomEnd('') }}
+                  className={`px-3 py-1.5 rounded-full text-sm border ${
+                    selectedDay === day
+                      ? 'bg-[#5c7d4e] text-white border-[#5c7d4e]'
+                      : 'border-[#f0ebe3] text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <div className="mb-4 pt-2 border-t border-[#f0ebe3]">
-        <p className="text-sm text-gray-600 mb-2">Or choose a custom date and time</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <input
-            type="date"
-            value={customDate}
-            onChange={e => { setCustomDate(e.target.value); setSelectedDay('') }}
-            className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
-          />
-          <input
-            type="time"
-            value={customStart}
-            onChange={e => setCustomStart(e.target.value)}
-            className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
-          />
-          <input
-            type="time"
-            value={customEnd}
-            onChange={e => setCustomEnd(e.target.value)}
-            className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
-          />
-        </div>
-        {customDate && customStart && customEnd && isBooked(customDate, customStart, customEnd) && (
-          <p className="text-xs text-red-600 mt-2">This time is already booked.</p>
-        )}
-      </div>
+          <div className="mb-4 pt-2 border-t border-[#f0ebe3]">
+            <p className="text-sm text-gray-600 mb-2">Or choose a custom date and time</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <input
+                type="date"
+                value={customDate}
+                onChange={e => { setCustomDate(e.target.value); setSelectedDay('') }}
+                className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
+              />
+              <input
+                type="time"
+                value={customStart}
+                onChange={e => setCustomStart(e.target.value)}
+                className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
+              />
+              <input
+                type="time"
+                value={customEnd}
+                onChange={e => setCustomEnd(e.target.value)}
+                className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+            {customDate && customStart && customEnd && isBooked(customDate, customStart, customEnd) && (
+              <p className="text-xs text-red-600 mt-2">This time is already booked.</p>
+            )}
+          </div>
+        </>
+      )}
 
       <label className="flex items-center gap-2 text-sm mb-3">
         <input
@@ -200,7 +243,7 @@ export default function BookingRequestForm({
         disabled={loading || !canSubmit}
         className="w-full bg-[#5c7d4e] text-white py-3 rounded-xl text-sm font-medium disabled:opacity-50"
       >
-        {loading ? 'Sending...' : 'Send request'}
+        {loading ? 'Sending...' : instantBook ? 'Book now' : 'Send request'}
       </button>
     </div>
   )
