@@ -4,9 +4,17 @@ import AddToCircleButton from './add-to-circle-button'
 import BookingRequestForm from './booking-request-form'
 import AvailabilityCalendar from './availability-calendar'
 import ShareButton from './share-button'
+import InviteButton from './invite-button'
 
-export default async function ProProfilePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProProfilePage({ 
+  params,
+  searchParams,
+}: { 
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ invited_by?: string; inviter?: string }>
+}) {
   const { id } = await params
+  const { invited_by, inviter } = await searchParams
   const supabase = await createClient()
 
   const { data: pro } = await supabase
@@ -38,6 +46,12 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
 
   return (
     <div className="max-w-3xl">
+      {invited_by && inviter && (
+        <div className="bg-[#f0f7ed] border border-[#e0eed8] rounded-xl p-4 mb-6 text-sm text-[#5c7d4e]">
+          Recommended by {decodeURIComponent(inviter)}
+        </div>
+      )}
+
       <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
         {pro.avatar_url && (
           <img src={pro.avatar_url} alt={pro.full_name} className="w-20 h-20 rounded-full object-cover mb-4" />
@@ -67,6 +81,7 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
           </div>
           <div className="flex gap-2">
             <ShareButton />
+            <InviteButton proId={pro.id} proName={pro.full_name} />
             <AddToCircleButton proId={pro.id} />
           </div>
         </div>
