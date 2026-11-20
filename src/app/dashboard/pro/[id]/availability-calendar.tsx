@@ -24,7 +24,11 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
     if (!confirm) return
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      alert('Not logged in')
+      setLoading(false)
+      return
+    }
 
     const { date, time } = confirm
     const [hours, minutes] = time.replace(' AM', '').replace(' PM', '').split(':')
@@ -35,17 +39,23 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
     const start = new Date(date)
     start.setHours(h, parseInt(minutes), 0, 0)
 
-    await supabase.from('bookings').insert({
+    const { data, error } = await supabase.from('bookings').insert({
       client_id: user.id,
       pro_id: proId,
       status: 'pending',
       start_time: start.toISOString(),
       notes: `Booked for ${date.toLocaleDateString()} at ${time}`,
-    })
+    }).select()
+
+    console.log('Insert result:', { data, error })
+    if (error) {
+      alert('Booking failed: ' + error.message)
+    } else {
+      router.push('/dashboard/bookings')
+    }
 
     setLoading(false)
     setConfirm(null)
-    router.push('/dashboard/bookings')
   }
 
   return (
