@@ -4,17 +4,25 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function BookingActions({ bookingId }: { bookingId: string }) {
+export default function BookingActions({ 
+  bookingId, 
+  status 
+}: { 
+  bookingId: string
+  status?: string 
+}) {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
-  async function updateStatus(status: string) {
+  async function updateStatus(newStatus: string) {
     setLoading(true)
-    await supabase.from('bookings').update({ status }).eq('id', bookingId)
+    await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId)
     router.refresh()
     setLoading(false)
   }
+
+  if (status && status !== 'pending') return null
 
   return (
     <div className="flex gap-2 mt-3">
