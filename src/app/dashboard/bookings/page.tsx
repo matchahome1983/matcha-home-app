@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import BookingActions from './booking-actions'
 import FeeButton from './fee-button'
+import CompleteButton from './complete-button'
+import ReviewForm from './review-form'
 
 export default async function MyBookingsPage({
   searchParams,
@@ -53,6 +55,8 @@ export default async function MyBookingsPage({
             const rate = b.pro?.hourly_rate || 0
             const subtotal = hours * rate
             const fee = subtotal * 0.12
+            const hoursUntil = (start.getTime() - Date.now()) / (1000 * 60 * 60)
+            const lateCancel = hoursUntil < 24 && b.status !== 'cancelled' && b.status !== 'completed'
 
             return (
               <div key={b.id} className="bg-white rounded-xl p-5 shadow-sm border border-[#f0ebe3]">
@@ -86,22 +90,31 @@ export default async function MyBookingsPage({
                   </span>
                 </div>
 
-                {isPro && b.status === 'pending' && (
-                  <BookingActions bookingId={b.id} />
-                )}
+                {isPro && b.status === 'pending' && <BookingActions bookingId={b.id} />}
+                {isPro && b.status === 'confirmed' && <CompleteButton bookingId={b.id} />}
 
                 {!isPro && b.status === 'completed' && (
-                  <Link
-                    href={`/dashboard/pro/${b.pro_id}`}
-                    className="inline-block mt-3 text-sm text-[#5c7d4e] hover:underline"
-                  >
-                    Book again
-                  </Link>
+                  <>
+                    <ReviewForm bookingId={b.id} proId={b.pro_id} />
+                    <Link
+                      href={`/dashboard/pro/${b.pro_id}`}
+                      className="inline-block mt-3 text-sm bg-[#5c7d4e] text-white px-4 py-1.5 rounded-xl font-medium"
+                    >
+                      Book again
+                    </Link>
+                  </>
                 )}
 
-                <p className="text-xs text-gray-400 mt-3">
-                  Cancellations within 24 hours may incur a $25 fee.
-                </p>
+                {lateCancel && (
+                  <p className="text-xs text-amber-700 mt-3 bg-amber-50 rounded-lg px-3 py-2">
+                    Cancelling within 24 hours may incur a $25 fee.
+                  </p>
+                )}
+                {!lateCancel && (
+                  <p className="text-xs text-gray-400 mt-3">
+                    Cancellations within 24 hours may incur a $25 fee.
+                  </p>
+                )}
               </div>
             )
           })}

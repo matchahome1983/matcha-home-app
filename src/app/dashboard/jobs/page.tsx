@@ -17,6 +17,18 @@ export default async function JobsPage() {
     .eq('status', 'open')
     .order('created_at', { ascending: false })
 
+  let applicationCounts: Record<string, number> = {}
+  if (!isPro && jobs) {
+    const jobIds = jobs.map(j => j.id)
+    const { data: apps } = await supabase
+      .from('job_applications')
+      .select('job_id')
+      .in('job_id', jobIds)
+    apps?.forEach(a => {
+      applicationCounts[a.job_id] = (applicationCounts[a.job_id] || 0) + 1
+    })
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -42,9 +54,12 @@ export default async function JobsPage() {
               <p className="font-medium text-[#2c2c2c]">{job.title}</p>
               <p className="text-sm text-gray-600 mt-1">{job.description}</p>
               <p className="text-sm text-gray-500 mt-2">
-                {job.preferred_date} at {job.preferred_time} · {job.duration_hours} hrs
+                Preferred: {job.preferred_date || 'Flexible'} at {job.preferred_time || 'any time'} · {job.duration_hours} hrs
               </p>
               <p className="text-xs text-gray-400 mt-1">Posted by {job.client?.full_name}</p>
+              {!isPro && applicationCounts[job.id] !== undefined && (
+                <p className="text-xs text-[#5c7d4e] mt-1">{applicationCounts[job.id]} application{applicationCounts[job.id] !== 1 ? 's' : ''}</p>
+              )}
               {isPro && (
                 <div className="mt-3 flex gap-2">
                   <ApplyButton jobId={job.id} />

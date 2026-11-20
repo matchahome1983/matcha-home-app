@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import AddToCircleButton from './add-to-circle-button'
 import BookingRequestForm from './booking-request-form'
 
@@ -39,6 +38,12 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
     .order('created_at', { ascending: false })
     .limit(5)
 
+  const { count: completedCount } = await supabase
+    .from('bookings')
+    .select('*', { count: 'exact', head: true })
+    .eq('pro_id', pro.id)
+    .eq('status', 'completed')
+
   return (
     <div className="max-w-3xl">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
@@ -48,11 +53,22 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
         <h1 className="text-3xl font-semibold text-[#5c7d4e]">{pro.full_name}</h1>
         <p className="text-gray-600 mt-1">{pro.city}</p>
         {pro.hourly_rate && <p className="text-lg font-medium mt-2">${pro.hourly_rate}/hr</p>}
+        {pro.years_experience && (
+          <p className="text-sm text-gray-600 mt-1">{pro.years_experience} years of experience</p>
+        )}
         {pro.reliability_score && (
           <p className="text-sm text-gray-600 mt-1">Completed {pro.reliability_score}% of bookings</p>
         )}
+        {pro.avg_response_minutes && (
+          <p className="text-sm text-gray-600 mt-1">
+            Usually responds in {pro.avg_response_minutes < 60 ? `${pro.avg_response_minutes} min` : `${Math.round(pro.avg_response_minutes / 60)} hr`}
+          </p>
+        )}
+        {completedCount && completedCount > 5 && (
+          <span className="inline-block mt-2 bg-purple-50 text-purple-800 text-xs px-2.5 py-1 rounded-full">Repeat Pro</span>
+        )}
         {pro.available_now && (
-          <span className="inline-block mt-2 bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full">Available Now</span>
+          <span className="inline-block mt-2 ml-2 bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full">Available Now</span>
         )}
         {pro.bio && <p className="text-gray-700 mt-4">{pro.bio}</p>}
         <AddToCircleButton proId={pro.id} />
