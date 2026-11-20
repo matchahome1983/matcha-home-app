@@ -16,7 +16,6 @@ export default function AvailabilityCalendar({
   const supabase = createClient()
   const router = useRouter()
 
-  // Build upcoming slots from the server-provided availability
   const slots: { date: Date; time: string }[] = []
   const today = new Date()
   today.setHours(0, 0, 0, 0)
