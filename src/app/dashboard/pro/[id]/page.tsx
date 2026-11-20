@@ -31,10 +31,14 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
   const { data: reviews } = await supabase.rpc('get_pro_reviews', { pro: pro.id })
   const { data: avgRating } = await supabase.rpc('get_average_rating', { pro_id: pro.id })
 
-  const { data: availability } = await supabase
+  const { data: availability, error: availabilityError } = await supabase
     .from('availability')
     .select('day_of_week, start_time, end_time')
     .eq('pro_id', pro.id)
+
+  console.log('PRO ID:', pro.id)
+  console.log('AVAILABILITY DATA:', availability)
+  console.log('AVAILABILITY ERROR:', availabilityError)
 
   return (
     <div className="max-w-3xl mx-auto">
