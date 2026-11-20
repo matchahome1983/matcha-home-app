@@ -66,15 +66,6 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
           <Link href={`/dashboard/messages/${pro.id}`} className="border border-[#f0ebe3] px-4 py-2 rounded-xl text-sm">
             Message
           </Link>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.href)
-              alert('Profile link copied')
-            }}
-            className="border border-[#f0ebe3] px-4 py-2 rounded-xl text-sm"
-          >
-            Share this Pro
-          </button>
         </div>
       </div>
 
