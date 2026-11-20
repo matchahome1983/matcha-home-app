@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import LogoutButton from './logout-button'
-import ThemeToggle from './theme-toggle'
 import Image from 'next/image'
 
 export default async function DashboardLayout({
@@ -61,7 +60,6 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
               </>
             )}
-            <ThemeToggle />
             <LogoutButton />
           </nav>
         </div>

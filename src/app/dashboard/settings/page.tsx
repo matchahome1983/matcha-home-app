@@ -4,6 +4,12 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
+import ThemeToggle from './theme-toggle'
+
+// Inside the return, after the heading:
+<ThemeToggle />
+
+
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
