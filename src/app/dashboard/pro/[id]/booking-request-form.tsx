@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -12,162 +12,163 @@ function formatTime(t: string) {
   return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
 }
 
-export default function BookingRequestForm({ 
-  proId, 
+export default function BookingRequestForm({
+  proId,
   availableNow,
-  availability 
-}: { 
+  availability,
+}: {
   proId: string
-  availableNow?: boolean
-  availability?: any[]
+  availableNow: boolean
+  availability: any[]
 }) {
-  const [selectedDate, setSelectedDate] = useState('')
-  const [selectedBlock, setSelectedBlock] = useState<any>(null)
-  const [showCustom, setShowCustom] = useState(false)
-  const [customStart, setCustomStart] = useState('09:00')
-  const [customDuration, setCustomDuration] = useState('2')
+  const [selectedDay, setSelectedDay] = useState('')
+  const [customDate, setCustomDate] = useState('')
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
   const [notes, setNotes] = useState('')
-  const [instantBook, setInstantBook] = useState(false)
   const [isRecurring, setIsRecurring] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
+  const [bookedSlots, setBookedSlots] = useState<any[]>([])
   const supabase = createClient()
   const router = useRouter()
 
-  const nextDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() + i)
-    return d.toISOString().split('T')[0]
-  })
+  const upcomingDays = [...new Set(availability.map(a => a.day_of_week))].slice(0, 7)
 
-  function getBlocksForDate(dateStr: string) {
-    if (!availability || !dateStr) return []
-    const dayName = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long' })
-    return availability.filter(a => a.day_of_week === dayName)
+  useEffect(() => {
+    loadBooked()
+  }, [])
+
+  async function loadBooked() {
+    const { data } = await supabase
+      .from('bookings')
+      .select('start_time, end_time')
+      .eq('pro_id', proId)
+      .in('status', ['pending', 'confirmed'])
+      .gte('start_time', new Date().toISOString())
+    setBookedSlots(data || [])
   }
 
-  const blocks = getBlocksForDate(selectedDate)
+  function isBooked(date: string, start: string, end: string) {
+    if (!date || !start || !end) return false
+    const startDt = new Date(`${date}T${start}`)
+    const endDt = new Date(`${date}T${end}`)
+    return bookedSlots.some(b => {
+      const bStart = new Date(b.start_time)
+      const bEnd = new Date(b.end_time)
+      return startDt < bEnd && endDt > bStart
+    })
+  }
 
-  async function handleBook(block?: any) {
+  async function submit() {
     setLoading(true)
-    setMessage('')
-
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    let start: Date
-    let end: Date
+    let startTime: string
+    let endTime: string
 
-    if (block) {
-      start = new Date(`${selectedDate}T${block.start_time}`)
-      end = new Date(`${selectedDate}T${block.end_time}`)
+    if (customDate && customStart && customEnd) {
+      if (isBooked(customDate, customStart, customEnd)) {
+        alert('That time is already booked.')
+        setLoading(false)
+        return
+      }
+      startTime = new Date(`${customDate}T${customStart}`).toISOString()
+      endTime = new Date(`${customDate}T${customEnd}`).toISOString()
+    } else if (selectedDay) {
+      const slot = availability.find(a => a.day_of_week === selectedDay)
+      if (!slot) return
+      const today = new Date()
+      const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(selectedDay)
+      const next = new Date(today)
+      next.setDate(today.getDate() + ((dayIndex + 7 - today.getDay()) % 7 || 7))
+      const dateStr = next.toISOString().split('T')[0]
+      startTime = new Date(`${dateStr}T${slot.start_time}`).toISOString()
+      endTime = new Date(`${dateStr}T${slot.end_time}`).toISOString()
     } else {
-      start = new Date(`${selectedDate}T${customStart}`)
-      end = new Date(start.getTime() + parseInt(customDuration) * 60 * 60 * 1000)
+      setLoading(false)
+      return
     }
 
-    const status = instantBook && availableNow ? 'confirmed' : 'pending'
-
-    const { data: inserted, error } = await supabase.from('bookings').insert({
+    const { error } = await supabase.from('bookings').insert({
       client_id: user.id,
       pro_id: proId,
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
+      start_time: startTime,
+      end_time: endTime,
       notes,
-      status,
       is_recurring: isRecurring,
-      recurrence_pattern: isRecurring ? 'weekly' : null,
-    }).select().single()
+      status: 'pending',
+    })
 
-    if (error) {
-      setMessage('Error: ' + error.message)
-    } else {
-      router.push(`/dashboard/bookings/confirm?booking=${inserted.id}`)
+    if (!error) {
+      router.push('/dashboard/bookings?sent=true')
     }
     setLoading(false)
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mt-4">
-      <h3 className="font-medium text-[#2c2c2c] mb-4">Request booking</h3>
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
+      <h2 className="font-semibold mb-4">Request booking</h2>
 
-      <div className="mb-4">
-        <p className="text-sm text-gray-600 mb-2">Select a day</p>
-        <div className="flex flex-wrap gap-2">
-          {nextDays.map(d => {
-            const label = new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => { setSelectedDate(d); setSelectedBlock(null); setShowCustom(false) }}
-                className={`px-3 py-1.5 rounded-full text-sm border ${
-                  selectedDate === d 
-                    ? 'bg-[#5c7d4e] text-white border-[#5c7d4e]' 
-                    : 'border-[#f0ebe3] hover:bg-gray-50'
-                }`}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {selectedDate && (
+      {availability.length > 0 && (
         <div className="mb-4">
           <p className="text-sm text-gray-600 mb-2">Available times</p>
-          {blocks.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {blocks.map((b, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => { setSelectedBlock(b); setShowCustom(false) }}
-                  className={`px-3 py-1.5 rounded-xl text-sm border ${
-                    selectedBlock === b 
-                      ? 'bg-[#5c7d4e] text-white border-[#5c7d4e]' 
-                      : 'border-[#f0ebe3] hover:bg-gray-50'
-                  }`}
-                >
-                  {formatTime(b.start_time)} – {formatTime(b.end_time)}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">No set availability for this day.</p>
-          )}
-
-          <button
-            type="button"
-            onClick={() => { setShowCustom(true); setSelectedBlock(null) }}
-            className="mt-3 text-sm text-[#5c7d4e] hover:underline"
-          >
-            Other time
-          </button>
+          <div className="space-y-1 text-sm text-gray-500">
+            {availability.slice(0, 6).map((slot, i) => (
+              <p key={i}>
+                {slot.day_of_week}: {formatTime(slot.start_time)} – {formatTime(slot.end_time)}
+              </p>
+            ))}
+          </div>
         </div>
       )}
 
-      {showCustom && (
-        <div className="space-y-3 mb-4">
+      <div className="mb-4">
+        <p className="text-sm text-gray-600 mb-2">Or pick a quick day</p>
+        <div className="flex flex-wrap gap-2">
+          {upcomingDays.map(day => (
+            <button
+              key={day}
+              type="button"
+              onClick={() => { setSelectedDay(day); setCustomDate(''); setCustomStart(''); setCustomEnd('') }}
+              className={`px-3 py-1.5 rounded-full text-sm border ${
+                selectedDay === day
+                  ? 'bg-[#5c7d4e] text-white border-[#5c7d4e]'
+                  : 'border-[#f0ebe3] text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {day}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-4 pt-2 border-t border-[#f0ebe3]">
+        <p className="text-sm text-gray-600 mb-2">Or choose a custom date and time</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <input
+            type="date"
+            value={customDate}
+            onChange={e => { setCustomDate(e.target.value); setSelectedDay('') }}
+            className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
+          />
           <input
             type="time"
             value={customStart}
             onChange={e => setCustomStart(e.target.value)}
-            className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
+            className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
           />
-          <select
-            value={customDuration}
-            onChange={e => setCustomDuration(e.target.value)}
-            className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
-          >
-            <option value="1">1 hour</option>
-            <option value="2">2 hours</option>
-            <option value="3">3 hours</option>
-            <option value="4">4 hours</option>
-          </select>
+          <input
+            type="time"
+            value={customEnd}
+            onChange={e => setCustomEnd(e.target.value)}
+            className="border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
+          />
         </div>
-      )}
+        {customDate && customStart && customEnd && isBooked(customDate, customStart, customEnd) && (
+          <p className="text-xs text-red-600 mt-2">This time is already booked.</p>
+        )}
+      </div>
 
       <label className="flex items-center gap-2 text-sm mb-3">
         <input
@@ -183,30 +184,16 @@ export default function BookingRequestForm({
         value={notes}
         onChange={e => setNotes(e.target.value)}
         rows={2}
-        className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm mb-3"
+        className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm mb-4"
       />
 
-      {availableNow && (
-        <label className="flex items-center gap-2 text-sm mb-3">
-          <input
-            type="checkbox"
-            checked={instantBook}
-            onChange={e => setInstantBook(e.target.checked)}
-          />
-          Book Now (instant confirmation)
-        </label>
-      )}
-
       <button
-        type="button"
-        disabled={loading || (!selectedBlock && !showCustom) || !selectedDate}
-        onClick={() => handleBook(selectedBlock)}
-        className="w-full bg-[#5c7d4e] text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
+        onClick={submit}
+        disabled={loading || (!selectedDay && !(customDate && customStart && customEnd)) || (customDate && isBooked(customDate, customStart, customEnd))}
+        className="w-full bg-[#5c7d4e] text-white py-3 rounded-xl text-sm font-medium disabled:opacity-50"
       >
         {loading ? 'Sending...' : 'Send request'}
       </button>
-
-      {message && <p className="text-sm text-gray-600 mt-2">{message}</p>}
     </div>
   )
 }
