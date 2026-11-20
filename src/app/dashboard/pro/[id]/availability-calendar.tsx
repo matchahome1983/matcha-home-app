@@ -9,29 +9,10 @@ const shortDays: Record<string, string> = {
   Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
 }
 
-function normalizeDay(raw: string | number): string | null {
-  if (typeof raw === 'number') {
-    const map = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    return map[raw] || map[raw - 1] || null
-  }
-  if (!raw) return null
-  const s = String(raw).trim().toLowerCase()
-  const map: Record<string, string> = {
-    mon: 'Monday', monday: 'Monday',
-    tue: 'Tuesday', tues: 'Tuesday', tuesday: 'Tuesday',
-    wed: 'Wednesday', wednesday: 'Wednesday',
-    thu: 'Thursday', thurs: 'Thursday', thursday: 'Thursday',
-    fri: 'Friday', friday: 'Friday',
-    sat: 'Saturday', saturday: 'Saturday',
-    sun: 'Sunday', sunday: 'Sunday',
-  }
-  return map[s] || null
-}
-
 type Slot = {
-  day_of_week: string | number
+  day_of_week: string
   start_time: string
-  end_time?: string
+  end_time: string
 }
 
 interface Props {
@@ -63,9 +44,9 @@ export default function AvailabilityCalendar({ proId, availability, availableNow
   const grouped = useMemo(() => {
     const g: Record<string, Slot[]> = {}
     dayOrder.forEach(d => { g[d] = [] })
-    availability.forEach(slot => {
-      const day = normalizeDay(slot.day_of_week)
-      if (day && g[day]) g[day].push(slot)
+    availability?.forEach(slot => {
+      const day = slot.day_of_week
+      if (g[day]) g[day].push(slot)
     })
     return g
   }, [availability])
@@ -85,7 +66,7 @@ export default function AvailabilityCalendar({ proId, availability, availableNow
 
       slots.forEach(slot => {
         const start = parseTime(slot.start_time)
-        const end = parseTime(slot.end_time || slot.start_time)
+        const end = parseTime(slot.end_time)
         for (let t = start; t + 180 <= end && blocks.length < 6; t += 60) {
           const dateStr = d.toISOString().slice(0, 10)
           const timeStr = formatTime(t)
@@ -109,7 +90,6 @@ export default function AvailabilityCalendar({ proId, availability, availableNow
       time,
       ...(isNow ? { now: '1' } : {}),
     })
-    // Change this path if your booking page lives somewhere else
     router.push(`/dashboard/book?${params.toString()}`)
   }
 
@@ -121,7 +101,7 @@ export default function AvailabilityCalendar({ proId, availability, availableNow
 
       {!hasAnyAvailability && (
         <div className="text-sm text-gray-500 mb-4 p-3 bg-gray-50 rounded-xl">
-          No availability set yet. Message this Pro to request a time.
+          No availability set yet.
         </div>
       )}
 
@@ -133,8 +113,7 @@ export default function AvailabilityCalendar({ proId, availability, availableNow
               {grouped[day].length > 0 ? (
                 grouped[day].map((slot, i) => (
                   <span key={i} className="bg-[#f0f7ed] text-[#5c7d4e] text-sm px-3 py-1.5 rounded-lg">
-                    {slot.start_time?.slice(0, 5)}
-                    {slot.end_time ? ` – ${slot.end_time.slice(0, 5)}` : ''}
+                    {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
                   </span>
                 ))
               ) : (
