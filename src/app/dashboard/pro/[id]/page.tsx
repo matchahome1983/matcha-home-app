@@ -4,6 +4,7 @@ import Link from 'next/link'
 import AddToCircleButton from './add-to-circle-button'
 import ShareButton from './share-button'
 import InstantBook from './instant-book'
+import AvailabilityCalendar from './availability-calendar'
 
 export default async function ProProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -33,6 +34,11 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
     .select('certifications(name)')
     .eq('pro_id', pro.id)
 
+  const { data: availability } = await supabase
+    .from('availability')
+    .select('*')
+    .eq('pro_id', pro.id)
+
   return (
     <div className="max-w-3xl">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
@@ -54,13 +60,15 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
       </div>
 
       <InstantBook 
-  proId={pro.id} 
-  initialAvailable={pro.available_now}
-  proLat={pro.lat}
-  proLng={pro.lng}
-  clientLat={clientProfile?.lat}
-  clientLng={clientProfile?.lng}
-/>
+        proId={pro.id} 
+        initialAvailable={pro.available_now}
+        proLat={pro.lat}
+        proLng={pro.lng}
+        clientLat={clientProfile?.lat}
+        clientLng={clientProfile?.lng}
+      />
+
+      <AvailabilityCalendar proId={pro.id} availability={availability || []} />
 
       {services && services.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
