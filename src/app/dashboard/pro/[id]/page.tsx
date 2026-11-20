@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import AddToCircleButton from './add-to-circle-button'
 import BookingRequestForm from './booking-request-form'
 import AvailabilityCalendar from './availability-calendar'
@@ -79,7 +80,13 @@ export default async function ProProfilePage({
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/dashboard/messages/${pro.id}`}
+              className="text-sm bg-[#5c7d4e] text-white px-4 py-2 rounded-xl hover:bg-[#4a6b3e]"
+            >
+              Message
+            </Link>
             <ShareButton />
             <InviteButton proId={pro.id} proName={pro.full_name} />
             <AddToCircleButton proId={pro.id} />
@@ -125,7 +132,7 @@ export default async function ProProfilePage({
         <AvailabilityCalendar availability={availability} />
       )}
 
-      <BookingRequestForm proId={pro.id} />
+      <BookingRequestForm proId={pro.id} availableNow={pro.available_now} />
 
       {reviews && reviews.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm mt-6">

@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function BookingRequestForm({ proId }: { proId: string }) {
+export default function BookingRequestForm({ proId, availableNow }: { proId: string; availableNow?: boolean }) {
   const [date, setDate] = useState('')
   const [startTime, setStartTime] = useState('09:00')
   const [duration, setDuration] = useState('2')
   const [notes, setNotes] = useState('')
+  const [instantBook, setInstantBook] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const supabase = createClient()
@@ -25,19 +26,21 @@ export default function BookingRequestForm({ proId }: { proId: string }) {
     const start = new Date(`${date}T${startTime}`)
     const end = new Date(start.getTime() + parseInt(duration) * 60 * 60 * 1000)
 
+    const status = instantBook && availableNow ? 'confirmed' : 'pending'
+
     const { error } = await supabase.from('bookings').insert({
       client_id: user.id,
       pro_id: proId,
       start_time: start.toISOString(),
       end_time: end.toISOString(),
       notes,
-      status: 'pending',
+      status,
     })
 
     if (error) {
       setMessage('Error: ' + error.message)
     } else {
-      router.push('/dashboard/bookings?sent=true')
+      router.push(`/dashboard/bookings?sent=true&instant=${status === 'confirmed'}`)
     }
     setLoading(false)
   }
@@ -76,12 +79,24 @@ export default function BookingRequestForm({ proId }: { proId: string }) {
           rows={2}
           className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2 text-sm"
         />
+
+        {availableNow && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={instantBook}
+              onChange={e => setInstantBook(e.target.checked)}
+            />
+            Book Now (instant confirmation)
+          </label>
+        )}
+
         <button
           type="submit"
           disabled={loading}
           className="w-full bg-[#5c7d4e] text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
         >
-          {loading ? 'Sending...' : 'Send request'}
+          {loading ? 'Sending...' : instantBook ? 'Book Now' : 'Send request'}
         </button>
         {message && <p className="text-sm text-gray-600">{message}</p>}
       </div>
