@@ -27,10 +27,32 @@ export default function SearchPage() {
 
   async function search() {
     setLoading(true)
+
+    let proIds: string[] | null = null
+
+    // Filter by service if one is selected
+    if (selectedService) {
+      const { data: matching } = await supabase
+        .from('pro_services')
+        .select('pro_id')
+        .eq('service_id', selectedService)
+
+      proIds = matching?.map(m => m.pro_id) || []
+      if (proIds.length === 0) {
+        setPros([])
+        setLoading(false)
+        return
+      }
+    }
+
     let query = supabase
       .from('profiles')
       .select('id, full_name, city, hourly_rate, available_now, avatar_url')
       .eq('role', 'pro')
+
+    if (proIds) {
+      query = query.in('id', proIds)
+    }
 
     if (availableNow) {
       query = query.eq('available_now', true)
