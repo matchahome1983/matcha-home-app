@@ -57,7 +57,7 @@ export default function SearchPage() {
 
     let query = supabase
       .from('profiles')
-      .select('id, full_name, city, hourly_rate, available_now, avatar_url, avg_response_minutes, reliability_score, years_experience, updated_at')
+      .select('id, full_name, city, hourly_rate, available_now, avatar_url, avg_response_minutes, reliability_score, years_experience, updated_at, id_verified, livescan_verified, is_student')
       .eq('role', 'pro')
 
     if (proIds) query = query.in('id', proIds)
@@ -86,12 +86,23 @@ export default function SearchPage() {
     const circleMap: Record<string, number> = {}
     circleData?.forEach(c => { circleMap[c.pro_id] = (circleMap[c.pro_id] || 0) + 1 })
 
+    const { data: certData } = await supabase
+      .from('pro_certifications')
+      .select('pro_id, certifications(name)')
+      .in('pro_id', ids)
+    const certMap: Record<string, string[]> = {}
+    certData?.forEach(c => {
+      if (!certMap[c.pro_id]) certMap[c.pro_id] = []
+      if (c.certifications?.name) certMap[c.pro_id].push(c.certifications.name)
+    })
+
     const enriched = proData.map(p => ({
       ...p,
       availabilitySummary: summarizeAvailability(availMap[p.id] || []),
       avgRating: reviewMap[p.id] ? (reviewMap[p.id].sum / reviewMap[p.id].count).toFixed(1) : null,
       reviewCount: reviewMap[p.id]?.count || 0,
       circleCount: circleMap[p.id] || 0,
+      certifications: certMap[p.id] || [],
     }))
 
     setPros(enriched)
@@ -136,24 +147,43 @@ export default function SearchPage() {
             const isRecent = lastActive && (Date.now() - lastActive.getTime()) < 1000 * 60 * 60 * 24 * 2
             return (
               <Link key={pro.id} href={`/dashboard/pro/${pro.id}`} className="block">
-                <div className="bg-white rounded-xl p-5 shadow-sm border border-[#f0ebe3] hover:shadow-md flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-full bg-[#f0f7ed] flex items-center justify-center text-[#5c7d4e] font-medium flex-shrink-0 overflow-hidden">
-                    {pro.avatar_url ? <img src={pro.avatar_url} alt="" className="w-full h-full object-cover" /> : pro.full_name?.[0] || 'P'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium text-[#2c2c2c] truncate">{pro.full_name}</p>
-                      {pro.available_now && <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex-shrink-0">Available Now</span>}
+                <div className="bg-white rounded-xl p-5 shadow-sm border border-[#f0ebe3] hover:shadow-md">
+                  <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 rounded-full bg-[#f0f7ed] flex items-center justify-center text-[#5c7d4e] font-medium flex-shrink-0 overflow-hidden">
+                      {pro.avatar_url ? <img src={pro.avatar_url} alt="" className="w-full h-full object-cover" /> : pro.full_name?.[0] || 'P'}
                     </div>
-                    <p className="text-sm text-gray-500 mt-0.5">{pro.city || 'Location not set'}</p>
-                    {pro.hourly_rate && <p className="text-sm font-medium mt-1">${pro.hourly_rate}/hr</p>}
-                    {pro.avgRating && <p className="text-sm text-gray-700 mt-0.5">{pro.avgRating} ★ · {pro.reviewCount} review{pro.reviewCount !== 1 ? 's' : ''}</p>}
-                    {pro.circleCount > 0 && <p className="text-xs text-gray-500 mt-0.5">Saved by {pro.circleCount} famil{pro.circleCount === 1 ? 'y' : 'ies'}</p>}
-                    {pro.availabilitySummary && <p className="text-xs text-gray-500 mt-1">{pro.availabilitySummary}</p>}
-                    {pro.avg_response_minutes && <p className="text-xs text-gray-400 mt-0.5">Usually responds in {pro.avg_response_minutes < 60 ? `${pro.avg_response_minutes} min` : `${Math.round(pro.avg_response_minutes / 60)} hr`}</p>}
-                    {pro.reliability_score && <p className="text-xs text-gray-500 mt-0.5">Completed {pro.reliability_score}% of bookings</p>}
-                    {pro.years_experience && <p className="text-xs text-gray-500 mt-0.5">{pro.years_experience} years experience</p>}
-                    {isRecent && <p className="text-xs text-green-600 mt-0.5">Active recently</p>}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-[#2c2c2c] truncate">{pro.full_name}</p>
+                        {pro.available_now && <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex-shrink-0">Available Now</span>}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-0.5">{pro.city || 'Location not set'}</p>
+                      {pro.hourly_rate && <p className="text-sm font-medium mt-1">${pro.hourly_rate}/hr</p>}
+                      {pro.avgRating && <p className="text-sm text-gray-700 mt-0.5">{pro.avgRating} ★ · {pro.reviewCount} review{pro.reviewCount !== 1 ? 's' : ''}</p>}
+                      {pro.circleCount > 0 && <p className="text-xs text-gray-500 mt-0.5">Saved by {pro.circleCount} famil{pro.circleCount === 1 ? 'y' : 'ies'}</p>}
+                      {pro.availabilitySummary && <p className="text-xs text-gray-500 mt-1">{pro.availabilitySummary}</p>}
+                      {pro.avg_response_minutes && <p className="text-xs text-gray-400 mt-0.5">Usually responds in {pro.avg_response_minutes < 60 ? `${pro.avg_response_minutes} min` : `${Math.round(pro.avg_response_minutes / 60)} hr`}</p>}
+                      {pro.reliability_score && <p className="text-xs text-gray-500 mt-0.5">Completed {pro.reliability_score}% of bookings</p>}
+                      {pro.years_experience && <p className="text-xs text-gray-500 mt-0.5">{pro.years_experience} years experience</p>}
+                      {isRecent && <p className="text-xs text-green-600 mt-0.5">Active recently</p>}
+
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {pro.id_verified && <span className="bg-blue-50 text-blue-800 text-xs px-2 py-0.5 rounded-full">ID Verified</span>}
+                        {pro.livescan_verified && <span className="bg-green-50 text-green-800 text-xs px-2 py-0.5 rounded-full">LiveScan</span>}
+                        {pro.is_student && <span className="bg-purple-50 text-purple-800 text-xs px-2 py-0.5 rounded-full">Student</span>}
+                      </div>
+
+                      {pro.certifications && pro.certifications.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {pro.certifications.slice(0, 3).map((cert: string) => (
+                            <span key={cert} className="bg-[#f0f7ed] text-[#5c7d4e] text-xs px-2 py-0.5 rounded-full">{cert}</span>
+                          ))}
+                          {pro.certifications.length > 3 && (
+                            <span className="text-xs text-gray-400">+{pro.certifications.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Link>
