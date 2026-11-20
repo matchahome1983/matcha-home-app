@@ -7,6 +7,29 @@ import AvailabilityCalendar from './availability-calendar'
 import ShareButton from './share-button'
 import InviteButton from './invite-button'
 
+function formatTime(t: string) {
+  if (!t) return ''
+  const [h, m] = t.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const hour = h % 12 || 12
+  return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`
+}
+
+function summarizeAvailability(slots: any[]) {
+  if (!slots || slots.length === 0) return null
+  const byDay: Record<string, string[]> = {}
+  slots.forEach(s => {
+    if (!byDay[s.day_of_week]) byDay[s.day_of_week] = []
+    byDay[s.day_of_week].push(`${formatTime(s.start_time)}–${formatTime(s.end_time)}`)
+  })
+  const days = Object.keys(byDay)
+  const preview = days.slice(0, 3).map(day => {
+    const times = byDay[day].slice(0, 1).join(', ')
+    return `${day.slice(0, 3)} ${times}`
+  })
+  return preview.join(' · ')
+}
+
 export default async function ProProfilePage({ 
   params,
   searchParams,
@@ -41,6 +64,8 @@ export default async function ProProfilePage({
     .from('availability')
     .select('*')
     .eq('pro_id', pro.id)
+
+  const availabilitySummary = summarizeAvailability(availability || [])
 
   const { data: reviews } = await supabase.rpc('get_pro_reviews', { pro: pro.id })
   const { data: avgRating } = await supabase.rpc('get_average_rating', { pro_id: pro.id })
@@ -79,11 +104,15 @@ export default async function ProProfilePage({
                 <span className="bg-green-50 text-green-800 text-xs px-2.5 py-0.5 rounded-full">LiveScan</span>
               )}
             </div>
+            {pro.hourly_rate && (
+              <p className="text-lg font-medium mt-3">${pro.hourly_rate}/hr</p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2 justify-end">
             <Link
               href={`/dashboard/messages/${pro.id}`}
               className="text-sm bg-[#5c7d4e] text-white px-4 py-2.5 rounded-xl hover:bg-[#4a6b3e] font-medium"
+              title="Message this Pro"
             >
               Message
             </Link>
@@ -93,8 +122,8 @@ export default async function ProProfilePage({
           </div>
         </div>
 
-        {pro.hourly_rate && (
-          <p className="text-lg font-medium mt-4">${pro.hourly_rate}/hr</p>
+        {availabilitySummary && (
+          <p className="text-sm text-gray-600 mt-4">{availabilitySummary}</p>
         )}
 
         {pro.bio && (
@@ -132,7 +161,11 @@ export default async function ProProfilePage({
         <AvailabilityCalendar availability={availability} />
       )}
 
-      <BookingRequestForm proId={pro.id} availableNow={pro.available_now} />
+      <BookingRequestForm 
+        proId={pro.id} 
+        availableNow={pro.available_now} 
+        availability={availability || []} 
+      />
 
       {reviews && reviews.length > 0 && (
         <div className="bg-white rounded-xl p-6 shadow-sm mt-6">

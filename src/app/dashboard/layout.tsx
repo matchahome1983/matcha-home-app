@@ -51,6 +51,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard" className="hover:text-[#5c7d4e]">Dashboard</Link>
                 <Link href="/dashboard/requests" className="hover:text-[#5c7d4e]">Requests</Link>
                 <Link href="/dashboard/availability" className="hover:text-[#5c7d4e]">Availability</Link>
+                <Link href="/dashboard/jobs" className="hover:text-[#5c7d4e]">Jobs</Link>
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
                   Messages
                   {unreadCount > 0 && (
@@ -69,6 +70,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/search" className="hover:text-[#5c7d4e]">Find Pros</Link>
                 <Link href="/dashboard/circle" className="hover:text-[#5c7d4e]">Your Circle</Link>
                 <Link href="/dashboard/bookings" className="hover:text-[#5c7d4e]">My Bookings</Link>
+                <Link href="/dashboard/jobs" className="hover:text-[#5c7d4e]">Jobs</Link>
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
                   Messages
                   {unreadCount > 0 && (

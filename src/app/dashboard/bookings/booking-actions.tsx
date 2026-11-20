@@ -4,59 +4,34 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function BookingActions({ bookingId, status }: { bookingId: string; status: string }) {
+export default function BookingActions({ bookingId }: { bookingId: string }) {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
-  async function updateStatus(newStatus: string) {
+  async function updateStatus(status: string) {
     setLoading(true)
-    await supabase.from('bookings').update({ status: newStatus }).eq('id', bookingId)
-    setLoading(false)
+    await supabase.from('bookings').update({ status }).eq('id', bookingId)
     router.refresh()
+    setLoading(false)
   }
 
-  if (status === 'pending') {
-    return (
-      <div className="flex gap-2">
-        <button
-          onClick={() => updateStatus('confirmed')}
-          disabled={loading}
-          className="bg-[#5c7d4e] text-white text-sm px-4 py-2 rounded-xl disabled:opacity-50"
-        >
-          Accept
-        </button>
-        <button
-          onClick={() => updateStatus('cancelled')}
-          disabled={loading}
-          className="border border-gray-300 text-sm px-4 py-2 rounded-xl disabled:opacity-50"
-        >
-          Decline
-        </button>
-      </div>
-    )
-  }
-
-  if (status === 'confirmed') {
-    return (
-      <div className="flex gap-2">
-        <button
-          onClick={() => updateStatus('completed')}
-          disabled={loading}
-          className="bg-[#5c7d4e] text-white text-sm px-4 py-2 rounded-xl disabled:opacity-50"
-        >
-          Mark Complete
-        </button>
-        <button
-          onClick={() => updateStatus('cancelled')}
-          disabled={loading}
-          className="border border-gray-300 text-sm px-4 py-2 rounded-xl disabled:opacity-50"
-        >
-          Cancel
-        </button>
-      </div>
-    )
-  }
-
-  return null
+  return (
+    <div className="flex gap-2 mt-3">
+      <button
+        onClick={() => updateStatus('confirmed')}
+        disabled={loading}
+        className="text-sm bg-[#5c7d4e] text-white px-4 py-1.5 rounded-xl disabled:opacity-50"
+      >
+        Accept
+      </button>
+      <button
+        onClick={() => updateStatus('cancelled')}
+        disabled={loading}
+        className="text-sm border border-red-200 text-red-700 px-4 py-1.5 rounded-xl disabled:opacity-50"
+      >
+        Decline
+      </button>
+    </div>
+  )
 }
