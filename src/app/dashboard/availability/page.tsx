@@ -1,3 +1,12 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+const weekends = ['Saturday', 'Sunday']
+
 const timePresets = [
   { label: 'Morning', start: '08:00', end: '12:00' },
   { label: 'Afternoon', start: '12:00', end: '17:00' },
