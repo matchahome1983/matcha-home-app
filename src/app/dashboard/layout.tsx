@@ -28,6 +28,8 @@ export default async function DashboardLayout({
     .eq('receiver_id', user.id)
     .is('read_at', null)
 
+  const unreadCount = count ?? 0
+
   return (
     <div className="min-h-screen bg-[#fbf8f3] flex flex-col">
       <header className="bg-white border-b border-[#e8e0d5]">
@@ -51,9 +53,9 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/availability" className="hover:text-[#5c7d4e]">Availability</Link>
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
                   Messages
-                  {count > 0 && (
+                  {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-3 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                      {count}
+                      {unreadCount}
                     </span>
                   )}
                 </Link>
@@ -69,9 +71,9 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/bookings" className="hover:text-[#5c7d4e]">My Bookings</Link>
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
                   Messages
-                  {count > 0 && (
+                  {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-3 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                      {count}
+                      {unreadCount}
                     </span>
                   )}
                 </Link>
