@@ -116,3 +116,8 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
     </div>
   )
 }
+This version selects day_of_week, start_time, end_time and passes the data correctly to the calendar. After you save and deploy, the days that have rows in your availability table should display.
+
+
+
+
