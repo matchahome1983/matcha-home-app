@@ -73,7 +73,7 @@ export default async function MyBookingsPage() {
                 <p className="text-xs text-gray-400">
                   Updated {new Date(booking.updated_at || booking.created_at).toLocaleDateString()}
                 </p>
-                <BookingActions booking={booking} isPro={isPro} />
+                <BookingActions bookingId={booking.id} status={booking.status} />
               </div>
 
               {!isPro && booking.status === 'completed' && (
