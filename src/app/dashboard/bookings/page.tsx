@@ -61,7 +61,7 @@ export default async function MyBookingsPage() {
                 </span>
               </div>
 
-              <BookingActions booking={b} isPro={isPro} />
+              <BookingActions bookingId={b.id} status={b.status} />
 
               {!isPro && b.status === 'completed' && (
                 <div className="mt-4 pt-4 border-t border-[#f0ebe3]">
