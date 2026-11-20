@@ -87,7 +87,7 @@ export default async function NotificationsPage() {
           </div>
         </div>
       ) : (
-        pendingBookings?.length === 0 && (
+        (!pendingBookings || pendingBookings.length === 0) && (
           <div className="text-center py-16 bg-white rounded-2xl border border-[#f0ebe3]">
             <p className="text-gray-500">No new notifications.</p>
           </div>
