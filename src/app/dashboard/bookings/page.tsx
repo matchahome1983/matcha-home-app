@@ -4,13 +4,6 @@ import Link from 'next/link'
 import BookingActions from './booking-actions'
 import ReviewForm from './review-form'
 
-const statusStyles: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-green-100 text-green-800',
-  completed: 'bg-blue-100 text-blue-800',
-  cancelled: 'bg-red-100 text-red-800',
-}
-
 export default async function MyBookingsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -29,30 +22,27 @@ export default async function MyBookingsPage() {
     .from('bookings')
     .select(`
       *,
-      client:profiles!bookings_client_id_fkey(full_name, avatar_url),
-      pro:profiles!bookings_pro_id_fkey(full_name, avatar_url, hourly_rate)
+      client:profiles!bookings_client_id_fkey(full_name),
+      pro:profiles!bookings_pro_id_fkey(full_name)
     `)
-    .eq(isPro ? 'pro_id' : 'client_id', user.id)
+    .or(`client_id.eq.${user.id},pro_id.eq.${user.id}`)
     .order('start_time', { ascending: false })
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-[#2c2c2c]">My Bookings</h1>
-        <p className="text-gray-500 mt-1">View and manage your bookings</p>
-      </div>
+      <h1 className="text-2xl font-semibold text-[#2c2c2c] mb-6">My Bookings</h1>
 
       {bookings && bookings.length > 0 ? (
         <div className="space-y-4">
-          {bookings.map((booking: any) => (
-            <div key={booking.id} className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3]">
-              <div className="flex items-start justify-between gap-3">
+          {bookings.map((b: any) => (
+            <div key={b.id} className="bg-white rounded-2xl p-5 border border-[#f0ebe3]">
+              <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-medium text-[#2c2c2c]">
-                    {isPro ? booking.client?.full_name : booking.pro?.full_name}
+                  <p className="font-medium">
+                    {isPro ? b.client?.full_name : b.pro?.full_name}
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
-                    {new Date(booking.start_time).toLocaleDateString(undefined, {
+                    {new Date(b.start_time).toLocaleString('en-US', {
                       weekday: 'short',
                       month: 'short',
                       day: 'numeric',
@@ -60,24 +50,23 @@ export default async function MyBookingsPage() {
                       minute: '2-digit',
                     })}
                   </p>
-                  {booking.notes && (
-                    <p className="text-sm text-gray-600 mt-2">{booking.notes}</p>
-                  )}
+                  {b.notes && <p className="text-sm text-gray-600 mt-2">{b.notes}</p>}
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ${statusStyles[booking.status] || 'bg-gray-100 text-gray-700'}`}>
-                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                <span className={`text-xs px-2.5 py-1 rounded-full ${
+                  b.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  b.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {b.status}
                 </span>
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-gray-400">
-                  Updated {new Date(booking.updated_at || booking.created_at).toLocaleDateString()}
-                </p>
-                <BookingActions bookingId={booking.id} status={booking.status} />
-              </div>
+              <BookingActions booking={b} isPro={isPro} />
 
-              {!isPro && booking.status === 'completed' && (
-                <ReviewForm bookingId={booking.id} proId={booking.pro_id} />
+              {!isPro && b.status === 'completed' && (
+                <div className="mt-4 pt-4 border-t border-[#f0ebe3]">
+                  <ReviewForm bookingId={b.id} proId={b.pro_id} />
+                </div>
               )}
             </div>
           ))}
