@@ -52,6 +52,7 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/requests" className="hover:text-[#5c7d4e]">Requests</Link>
                 <Link href="/dashboard/availability" className="hover:text-[#5c7d4e]">Availability</Link>
                 <Link href="/dashboard/jobs" className="hover:text-[#5c7d4e]">Jobs</Link>
+                <Link href="/dashboard/earnings" className="hover:text-[#5c7d4e]">Earnings</Link>
                 <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
                   Messages
                   {unreadCount > 0 && (

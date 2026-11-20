@@ -21,11 +21,18 @@ export default async function JobsPage() {
     <div className="max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-[#2c2c2c]">Open Jobs</h1>
-        {!isPro && (
-          <Link href="/dashboard/jobs/new" className="text-sm bg-[#5c7d4e] text-white px-4 py-2.5 rounded-xl font-medium">
-            Post a job
-          </Link>
-        )}
+        <div className="flex gap-2">
+          {!isPro && (
+            <>
+              <Link href="/dashboard/jobs/new" className="text-sm bg-[#5c7d4e] text-white px-4 py-2.5 rounded-xl font-medium">
+                Post a job
+              </Link>
+              <Link href="/dashboard/jobs/applications" className="text-sm border border-[#f0ebe3] text-gray-700 px-4 py-2.5 rounded-xl font-medium hover:bg-gray-50">
+                View applications
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       {jobs && jobs.length > 0 ? (
