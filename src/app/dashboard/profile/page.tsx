@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
+const bundleOptions = ['After-School Reset', 'Date Night Plus', 'Sunday Reset', 'Party Helper']
+
 export default function ProfilePage() {
   const [fullName, setFullName] = useState('')
   const [bio, setBio] = useState('')
@@ -16,6 +18,7 @@ export default function ProfilePage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([])
   const [certs, setCerts] = useState<any[]>([])
   const [selectedCerts, setSelectedCerts] = useState<string[]>([])
+  const [bundles, setBundles] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const supabase = createClient()
@@ -59,6 +62,12 @@ export default function ProfilePage() {
         .select('certification_id')
         .eq('pro_id', user.id)
       setSelectedCerts(proCerts?.map(c => c.certification_id) || [])
+
+      const { data: proBundles } = await supabase
+        .from('pro_bundles')
+        .select('bundle_name')
+        .eq('pro_id', user.id)
+      setBundles(proBundles?.map(b => b.bundle_name) || [])
     }
     load()
   }, [])
@@ -72,6 +81,12 @@ export default function ProfilePage() {
   function toggleCert(id: string) {
     setSelectedCerts(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  function toggleBundle(name: string) {
+    setBundles(prev =>
+      prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name]
     )
   }
 
@@ -95,7 +110,6 @@ export default function ProfilePage() {
       })
       .eq('id', user.id)
 
-    // Update services
     await supabase.from('pro_services').delete().eq('pro_id', user.id)
     if (selectedServices.length > 0) {
       await supabase.from('pro_services').insert(
@@ -103,11 +117,17 @@ export default function ProfilePage() {
       )
     }
 
-    // Update certifications
     await supabase.from('pro_certifications').delete().eq('pro_id', user.id)
     if (selectedCerts.length > 0) {
       await supabase.from('pro_certifications').insert(
         selectedCerts.map(id => ({ pro_id: user.id, certification_id: id }))
+      )
+    }
+
+    await supabase.from('pro_bundles').delete().eq('pro_id', user.id)
+    if (bundles.length > 0) {
+      await supabase.from('pro_bundles').insert(
+        bundles.map(name => ({ pro_id: user.id, bundle_name: name }))
       )
     }
 
@@ -246,6 +266,26 @@ export default function ProfilePage() {
                 }`}
               >
                 {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-[#2c2c2c] block mb-2">Bundles I offer</label>
+          <div className="flex flex-wrap gap-2">
+            {bundleOptions.map(name => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => toggleBundle(name)}
+                className={`px-3 py-1.5 rounded-full text-sm ${
+                  bundles.includes(name)
+                    ? 'bg-[#5c7d4e] text-white'
+                    : 'border border-[#f0ebe3]'
+                }`}
+              >
+                {name}
               </button>
             ))}
           </div>
