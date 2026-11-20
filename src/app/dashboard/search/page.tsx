@@ -91,9 +91,10 @@ export default function SearchPage() {
       .select('pro_id, certifications(name)')
       .in('pro_id', ids)
     const certMap: Record<string, string[]> = {}
-    certData?.forEach(c => {
+    certData?.forEach((c: any) => {
       if (!certMap[c.pro_id]) certMap[c.pro_id] = []
-      if (c.certifications?.name) certMap[c.pro_id].push(c.certifications.name)
+      const certName = c.certifications?.name
+      if (certName) certMap[c.pro_id].push(certName)
     })
 
     const enriched = proData.map(p => ({
