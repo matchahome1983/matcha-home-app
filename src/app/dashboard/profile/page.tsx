@@ -17,16 +17,11 @@ export default function ProfilePage() {
   const supabase = createClient()
   const router = useRouter()
 
-  useEffect(() => {
-    load()
-  }, [])
+  useEffect(() => { load() }, [])
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+    if (!user) return router.push('/login')
 
     const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
     setProfile(prof)
@@ -54,16 +49,15 @@ export default function ProfilePage() {
       bio: profile.bio,
       hourly_rate: profile.hourly_rate,
       city: profile.city,
+      address: profile.address,
       available_now: profile.available_now,
     }).eq('id', user.id)
 
-    // Reset and re-insert services
     await supabase.from('pro_services').delete().eq('pro_id', user.id)
     if (services.length) {
       await supabase.from('pro_services').insert(services.map(name => ({ pro_id: user.id, service_name: name })))
     }
 
-    // Reset and re-insert certifications
     await supabase.from('pro_certifications').delete().eq('pro_id', user.id)
     if (certs.length) {
       await supabase.from('pro_certifications').insert(certs.map(name => ({ pro_id: user.id, cert_name: name })))
@@ -87,54 +81,37 @@ export default function ProfilePage() {
 
         <div>
           <label className="text-sm text-gray-600">Full name</label>
-          <input
-            value={profile.full_name || ''}
-            onChange={e => setProfile({ ...profile, full_name: e.target.value })}
-            className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1"
-          />
+          <input value={profile.full_name || ''} onChange={e => setProfile({ ...profile, full_name: e.target.value })} className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1" />
         </div>
 
         <div>
           <label className="text-sm text-gray-600">City</label>
-          <input
-            value={profile.city || ''}
-            onChange={e => setProfile({ ...profile, city: e.target.value })}
-            className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1"
-          />
+          <input value={profile.city || ''} onChange={e => setProfile({ ...profile, city: e.target.value })} className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1" />
+        </div>
+
+        <div>
+          <label className="text-sm text-gray-600">Street address</label>
+          <input value={profile.address || ''} onChange={e => setProfile({ ...profile, address: e.target.value })} placeholder="123 Main St" className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1" />
+          <p className="text-xs text-gray-400 mt-1">Used only for Instant Book arrival estimates</p>
         </div>
 
         {isPro && (
           <>
             <div>
               <label className="text-sm text-gray-600">Hourly rate</label>
-              <input
-                type="number"
-                value={profile.hourly_rate || ''}
-                onChange={e => setProfile({ ...profile, hourly_rate: e.target.value })}
-                className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1"
-              />
+              <input type="number" value={profile.hourly_rate || ''} onChange={e => setProfile({ ...profile, hourly_rate: e.target.value })} className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1" />
             </div>
 
             <div>
               <label className="text-sm text-gray-600">Bio</label>
-              <textarea
-                value={profile.bio || ''}
-                onChange={e => setProfile({ ...profile, bio: e.target.value })}
-                rows={3}
-                className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1"
-              />
+              <textarea value={profile.bio || ''} onChange={e => setProfile({ ...profile, bio: e.target.value })} rows={3} className="w-full border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm mt-1" />
             </div>
 
             <div>
               <p className="text-sm text-gray-600 mb-2">Services</p>
               <div className="flex flex-wrap gap-2">
                 {SERVICES.map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => toggle(services, setServices, s)}
-                    className={`px-3 py-1.5 rounded-full text-xs ${services.includes(s) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}
-                  >
+                  <button key={s} type="button" onClick={() => toggle(services, setServices, s)} className={`px-3 py-1.5 rounded-full text-xs ${services.includes(s) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
                     {s}
                   </button>
                 ))}
@@ -145,12 +122,7 @@ export default function ProfilePage() {
               <p className="text-sm text-gray-600 mb-2">Certifications</p>
               <div className="flex flex-wrap gap-2">
                 {CERTS.map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => toggle(certs, setCerts, c)}
-                    className={`px-3 py-1.5 rounded-full text-xs ${certs.includes(c) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}
-                  >
+                  <button key={c} type="button" onClick={() => toggle(certs, setCerts, c)} className={`px-3 py-1.5 rounded-full text-xs ${certs.includes(c) ? 'bg-[#5c7d4e] text-white' : 'border border-[#f0ebe3]'}`}>
                     {c}
                   </button>
                 ))}
@@ -158,21 +130,13 @@ export default function ProfilePage() {
             </div>
 
             <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={profile.available_now || false}
-                onChange={e => setProfile({ ...profile, available_now: e.target.checked })}
-              />
+              <input type="checkbox" checked={profile.available_now || false} onChange={e => setProfile({ ...profile, available_now: e.target.checked })} />
               Available Now
             </label>
           </>
         )}
 
-        <button
-          onClick={save}
-          disabled={saving}
-          className="w-full bg-[#5c7d4e] text-white py-3 rounded-xl text-sm font-medium disabled:opacity-50"
-        >
+        <button onClick={save} disabled={saving} className="w-full bg-[#5c7d4e] text-white py-3 rounded-xl text-sm font-medium disabled:opacity-50">
           {saving ? 'Saving...' : 'Save changes'}
         </button>
       </div>
