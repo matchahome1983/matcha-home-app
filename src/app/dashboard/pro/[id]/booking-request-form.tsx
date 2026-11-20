@@ -28,6 +28,7 @@ export default function BookingRequestForm({
   const [customDuration, setCustomDuration] = useState('2')
   const [notes, setNotes] = useState('')
   const [instantBook, setInstantBook] = useState(false)
+  const [isRecurring, setIsRecurring] = useState(false)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const supabase = createClient()
@@ -74,6 +75,8 @@ export default function BookingRequestForm({
       end_time: end.toISOString(),
       notes,
       status,
+      is_recurring: isRecurring,
+      recurrence_pattern: isRecurring ? 'weekly' : null,
     }).select().single()
 
     if (error) {
@@ -165,6 +168,15 @@ export default function BookingRequestForm({
           </select>
         </div>
       )}
+
+      <label className="flex items-center gap-2 text-sm mb-3">
+        <input
+          type="checkbox"
+          checked={isRecurring}
+          onChange={e => setIsRecurring(e.target.checked)}
+        />
+        Make this weekly
+      </label>
 
       <textarea
         placeholder="Notes (optional)"

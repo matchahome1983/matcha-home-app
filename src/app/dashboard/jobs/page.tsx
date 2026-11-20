@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import ApplyButton from './apply-button'
 
 export default async function JobsPage() {
   const supabase = await createClient()
@@ -38,12 +39,15 @@ export default async function JobsPage() {
               </p>
               <p className="text-xs text-gray-400 mt-1">Posted by {job.client?.full_name}</p>
               {isPro && (
-                <Link
-                  href={`/dashboard/messages/${job.client_id}`}
-                  className="inline-block mt-3 text-sm border border-[#f0ebe3] text-gray-700 px-4 py-2 rounded-xl font-medium hover:bg-gray-50"
-                >
-                  Message client
-                </Link>
+                <div className="mt-3 flex gap-2">
+                  <ApplyButton jobId={job.id} />
+                  <Link
+                    href={`/dashboard/messages/${job.client_id}`}
+                    className="text-sm border border-[#f0ebe3] text-gray-700 px-4 py-2 rounded-xl font-medium hover:bg-gray-50"
+                  >
+                    Message
+                  </Link>
+                </div>
               )}
             </div>
           ))}

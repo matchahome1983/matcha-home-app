@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import BookingActions from './booking-actions'
+import FeeButton from './fee-button'
 
 export default async function MyBookingsPage({
   searchParams,
@@ -59,6 +60,7 @@ export default async function MyBookingsPage({
                   <div>
                     <p className="font-medium text-[#2c2c2c]">
                       {isPro ? b.client?.full_name : b.pro?.full_name}
+                      {b.is_recurring && <span className="ml-2 text-xs bg-blue-50 text-blue-800 px-2 py-0.5 rounded-full">Recurring</span>}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
                       {start.toLocaleString()} – {end.toLocaleTimeString()}
@@ -68,9 +70,10 @@ export default async function MyBookingsPage({
                       Est. total: ${(subtotal + fee).toFixed(2)} (includes 12% fee)
                     </p>
                     {isPro && b.status === 'completed' && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Fee {b.fee_collected ? 'collected' : 'pending'}
-                      </p>
+                      <div className="mt-1">
+                        <p className="text-xs text-gray-500">Fee {b.fee_collected ? 'collected' : 'pending'}</p>
+                        <FeeButton bookingId={b.id} collected={b.fee_collected} />
+                      </div>
                     )}
                   </div>
                   <span className={`text-xs px-2.5 py-1 rounded-full ${
@@ -97,7 +100,7 @@ export default async function MyBookingsPage({
                 )}
 
                 <p className="text-xs text-gray-400 mt-3">
-                  Cancellations within 24 hours may incur a fee.
+                  Cancellations within 24 hours may incur a $25 fee.
                 </p>
               </div>
             )

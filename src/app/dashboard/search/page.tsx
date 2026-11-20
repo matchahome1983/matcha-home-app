@@ -69,7 +69,7 @@ export default function SearchPage() {
 
     let query = supabase
       .from('profiles')
-      .select('id, full_name, city, hourly_rate, available_now, avatar_url, avg_response_minutes')
+      .select('id, full_name, city, hourly_rate, available_now, avatar_url, avg_response_minutes, reliability_score')
       .eq('role', 'pro')
 
     if (proIds) {
@@ -168,6 +168,9 @@ export default function SearchPage() {
                     <p className="text-xs text-gray-400 mt-0.5">
                       Usually responds in {pro.avg_response_minutes < 60 ? `${pro.avg_response_minutes} min` : `${Math.round(pro.avg_response_minutes / 60)} hr`}
                     </p>
+                  )}
+                  {pro.reliability_score && (
+                    <p className="text-xs text-gray-500 mt-0.5">Completed {pro.reliability_score}% of bookings</p>
                   )}
                 </div>
               </div>
