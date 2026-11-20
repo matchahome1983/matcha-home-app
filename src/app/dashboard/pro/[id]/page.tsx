@@ -31,6 +31,11 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
   const { data: reviews } = await supabase.rpc('get_pro_reviews', { pro: pro.id })
   const { data: avgRating } = await supabase.rpc('get_average_rating', { pro_id: pro.id })
 
+  const { data: availability } = await supabase
+    .from('availability')
+    .select('day_of_week, start_time')
+    .eq('pro_id', pro.id)
+
   return (
     <div className="max-w-3xl mx-auto">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
@@ -66,10 +71,13 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
           <Link href={`/dashboard/messages/${pro.id}`} className="border border-[#f0ebe3] px-4 py-2 rounded-xl text-sm">
             Message
           </Link>
+          <Link href={`/dashboard/pro/${pro.id}`} className="border border-[#f0ebe3] px-4 py-2 rounded-xl text-sm">
+            Share this Pro
+          </Link>
         </div>
       </div>
 
-      <AvailabilityCalendar proId={pro.id} />
+      <AvailabilityCalendar proId={pro.id} availability={availability || []} />
 
       {services && services.length > 0 && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] mb-6">

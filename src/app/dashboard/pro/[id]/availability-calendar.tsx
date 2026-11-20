@@ -1,48 +1,47 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function AvailabilityCalendar({ proId }: { proId: string }) {
-  const [slots, setSlots] = useState<any[]>([])
+export default function AvailabilityCalendar({
+  proId,
+  availability,
+}: {
+  proId: string
+  availability: { day_of_week: string; start_time: string }[]
+}) {
   const [loading, setLoading] = useState(false)
   const [confirm, setConfirm] = useState<{ date: Date; time: string } | null>(null)
   const supabase = createClient()
   const router = useRouter()
 
-  useEffect(() => {
-    async function load() {
-      const { data } = await supabase
-        .from('availability')
-        .select('day_of_week, start_time')
-        .eq('pro_id', proId)
+  // Build upcoming slots from the server-provided availability
+  const slots: { date: Date; time: string }[] = []
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-      if (!data) return
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
 
-      const upcoming: any[] = []
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
+    availability
+      .filter((s) => s.day_of_week === dayName)
+      .forEach((s) => {
+        slots.push({
+          date: new Date(d),
+          time: s.start_time.slice(0, 5),
+        })
+      })
+  }
 
-      for (let i = 0; i < 14; i++) {
-        const d = new Date(today)
-        d.setDate(today.getDate() + i)
-        const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
-
-        data
-          .filter((s: any) => s.day_of_week === dayName)
-          .forEach((s: any) => {
-            upcoming.push({
-              date: new Date(d),
-              time: s.start_time.slice(0, 5),
-            })
-          })
-      }
-
-      setSlots(upcoming)
-    }
-    load()
-  }, [proId])
+  const grouped = slots.reduce((acc: any, s) => {
+    const key = s.date.toDateString()
+    if (!acc[key]) acc[key] = []
+    acc[key].push(s)
+    return acc
+  }, {})
 
   async function confirmBook() {
     if (!confirm) return
@@ -61,21 +60,12 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
       start_time: start.toISOString(),
     })
 
-    if (error) {
-      alert(error.message)
-    } else {
-      router.push('/dashboard/bookings')
-    }
+    if (error) alert(error.message)
+    else router.push('/dashboard/bookings')
+
     setLoading(false)
     setConfirm(null)
   }
-
-  const grouped = slots.reduce((acc: any, s) => {
-    const key = s.date.toDateString()
-    if (!acc[key]) acc[key] = []
-    acc[key].push(s)
-    return acc
-  }, {})
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] mb-6">
@@ -113,9 +103,7 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
               {confirm.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at {confirm.time}
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirm(null)} className="flex-1 border rounded-xl py-2.5 text-sm">
-                Cancel
-              </button>
+              <button onClick={() => setConfirm(null)} className="flex-1 border rounded-xl py-2.5 text-sm">Cancel</button>
               <button
                 onClick={confirmBook}
                 disabled={loading}
