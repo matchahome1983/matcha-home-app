@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import AddToCircleButton from './add-to-circle-button'
 import BookingRequestForm from './booking-request-form'
+import ShareButton from './share-button'
 
 export default async function ProProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -44,6 +46,13 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
     .eq('pro_id', pro.id)
     .eq('status', 'completed')
 
+  const nextAvailable = availability
+    ?.reduce((acc: string[], slot) => {
+      if (!acc.includes(slot.day_of_week)) acc.push(slot.day_of_week)
+      return acc
+    }, [])
+    .slice(0, 3) || []
+
   return (
     <div className="max-w-3xl">
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
@@ -71,7 +80,23 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
           <span className="inline-block mt-2 ml-2 bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full">Available Now</span>
         )}
         {pro.bio && <p className="text-gray-700 mt-4">{pro.bio}</p>}
-        <AddToCircleButton proId={pro.id} />
+
+        {nextAvailable.length > 0 && (
+          <p className="text-sm text-gray-500 mt-3">
+            Next available: {nextAvailable.join(', ')}
+          </p>
+        )}
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          <AddToCircleButton proId={pro.id} />
+          <Link
+            href={`/dashboard/messages/${pro.id}`}
+            className="text-sm border border-[#f0ebe3] text-gray-700 px-4 py-2.5 rounded-xl font-medium hover:bg-gray-50"
+          >
+            Message
+          </Link>
+          <ShareButton />
+        </div>
       </div>
 
       {services && services.length > 0 && (
