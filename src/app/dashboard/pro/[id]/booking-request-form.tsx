@@ -37,8 +37,7 @@ export default function BookingRequestForm({ proId }: { proId: string }) {
     if (error) {
       setMessage('Error: ' + error.message)
     } else {
-      setMessage('Request sent')
-      router.push('/dashboard/bookings')
+      router.push('/dashboard/bookings?sent=true')
     }
     setLoading(false)
   }

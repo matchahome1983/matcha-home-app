@@ -2,13 +2,17 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
-export default function MessageForm({ receiverId }: { receiverId: string }) {
+export default function MessageForm({
+  receiverId,
+  onSent,
+}: {
+  receiverId: string
+  onSent?: (msg: any) => void
+}) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
-  const router = useRouter()
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
@@ -18,15 +22,15 @@ export default function MessageForm({ receiverId }: { receiverId: string }) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { error } = await supabase.from('messages').insert({
+    const { data, error } = await supabase.from('messages').insert({
       sender_id: user.id,
       receiver_id: receiverId,
       content: content.trim(),
-    })
+    }).select().single()
 
-    if (!error) {
+    if (!error && data) {
       setContent('')
-      router.refresh()
+      onSent?.(data)
     }
     setLoading(false)
   }
