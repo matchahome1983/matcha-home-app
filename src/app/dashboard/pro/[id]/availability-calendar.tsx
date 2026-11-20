@@ -16,31 +16,40 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
   }, [proId])
 
   async function loadAvailability() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('availability')
       .select('*')
       .eq('pro_id', proId)
-      .order('day_of_week')
 
-    if (data) {
-      // Expand recurring slots into the next 14 days
-      const upcoming: any[] = []
-      const today = new Date()
-      for (let i = 0; i < 14; i++) {
-        const d = new Date(today)
-        d.setDate(today.getDate() + i)
-        const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
-        const matching = data.filter((s: any) => s.day_of_week === dayName)
-        matching.forEach((s: any) => {
-          upcoming.push({
-            date: new Date(d),
-            time: s.start_time,
-            end: s.end_time,
-          })
-        })
-      }
-      setSlots(upcoming)
+    if (error) {
+      console.error(error)
+      return
     }
+
+    if (!data || data.length === 0) {
+      setSlots([])
+      return
+    }
+
+    const upcoming: any[] = []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(today)
+      d.setDate(today.getDate() + i)
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
+
+      const matching = data.filter((s: any) => s.day_of_week === dayName)
+      matching.forEach((s: any) => {
+        upcoming.push({
+          date: new Date(d),
+          time: s.start_time?.slice(0, 5) || s.start_time, // "08:00"
+        })
+      })
+    }
+
+    setSlots(upcoming)
   }
 
   async function confirmBook() {
@@ -54,10 +63,9 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
     }
 
     const { date, time } = confirm
-    const [hours, minutes] = time.split(':')
-    let h = parseInt(hours)
+    const [h, m] = time.split(':').map(Number)
     const start = new Date(date)
-    start.setHours(h, parseInt(minutes), 0, 0)
+    start.setHours(h, m, 0, 0)
 
     const { error } = await supabase.from('bookings').insert({
       client_id: user.id,
@@ -77,7 +85,6 @@ export default function AvailabilityCalendar({ proId }: { proId: string }) {
     setConfirm(null)
   }
 
-  // Group slots by date
   const grouped = slots.reduce((acc: any, slot) => {
     const key = slot.date.toDateString()
     if (!acc[key]) acc[key] = []
