@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import LogoutButton from './logout-button'
+import ThemeToggle from './theme-toggle'
 import Image from 'next/image'
 
 export default async function DashboardLayout({
@@ -21,14 +22,6 @@ export default async function DashboardLayout({
     .single()
 
   const isPro = profile?.role === 'pro'
-
-  const { count } = await supabase
-    .from('messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('receiver_id', user.id)
-    .is('read_at', null)
-
-  const unreadCount = count ?? 0
 
   return (
     <div className="min-h-screen bg-[#fbf8f3] flex flex-col">
@@ -51,16 +44,8 @@ export default async function DashboardLayout({
                 <Link href="/dashboard" className="hover:text-[#5c7d4e]">Dashboard</Link>
                 <Link href="/dashboard/requests" className="hover:text-[#5c7d4e]">Requests</Link>
                 <Link href="/dashboard/availability" className="hover:text-[#5c7d4e]">Availability</Link>
-                <Link href="/dashboard/jobs" className="hover:text-[#5c7d4e]">Jobs</Link>
-                <Link href="/dashboard/earnings" className="hover:text-[#5c7d4e]">Earnings</Link>
-                <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
-                  Messages
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-3 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
+                <Link href="/dashboard/bookings" className="hover:text-[#5c7d4e]">Bookings</Link>
+                <Link href="/dashboard/messages" className="hover:text-[#5c7d4e]">Messages</Link>
                 <Link href="/dashboard/profile" className="hover:text-[#5c7d4e]">Profile</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
                 <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
@@ -71,19 +56,12 @@ export default async function DashboardLayout({
                 <Link href="/dashboard/search" className="hover:text-[#5c7d4e]">Find Pros</Link>
                 <Link href="/dashboard/circle" className="hover:text-[#5c7d4e]">Your Circle</Link>
                 <Link href="/dashboard/bookings" className="hover:text-[#5c7d4e]">My Bookings</Link>
-                <Link href="/dashboard/jobs" className="hover:text-[#5c7d4e]">Jobs</Link>
-                <Link href="/dashboard/messages" className="hover:text-[#5c7d4e] relative">
-                  Messages
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-3 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </Link>
+                <Link href="/dashboard/messages" className="hover:text-[#5c7d4e]">Messages</Link>
                 <Link href="/dashboard/referrals" className="hover:text-[#5c7d4e]">Referrals</Link>
                 <Link href="/dashboard/settings" className="hover:text-[#5c7d4e]">Settings</Link>
               </>
             )}
+            <ThemeToggle />
             <LogoutButton />
           </nav>
         </div>
