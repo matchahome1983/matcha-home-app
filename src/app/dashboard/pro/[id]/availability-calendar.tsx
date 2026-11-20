@@ -4,63 +4,55 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-export default function AvailabilityCalendar({
-  proId,
-  availability,
-}: {
-  proId: string
-  availability: { day_of_week: string; start_time: string }[]
-}) {
+export default function AvailabilityCalendar({ proId }: { proId: string }) {
+  const [customDate, setCustomDate] = useState('')
+  const [customTime, setCustomTime] = useState('')
   const [loading, setLoading] = useState(false)
   const [confirm, setConfirm] = useState<{ date: Date; time: string } | null>(null)
   const supabase = createClient()
   const router = useRouter()
 
-  const slots: { date: Date; time: string }[] = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const blocks = ['9:00 AM', '12:00 PM', '3:00 PM', '6:00 PM']
 
-  for (let i = 0; i < 21; i++) {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' })
-
-    availability
-      .filter((s) => s.day_of_week === dayName)
-      .forEach((s) => {
-        slots.push({
-          date: new Date(d),
-          time: s.start_time.slice(0, 5),
-        })
-      })
-  }
-
-  const grouped = slots.reduce((acc: any, s) => {
-    const key = s.date.toDateString()
-    if (!acc[key]) acc[key] = []
-    acc[key].push(s)
-    return acc
-  }, {})
+  const upcoming = Array.from({ length: 4 }, (_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() + i + 1)
+    return d
+  })
 
   async function confirmBook() {
     if (!confirm) return
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      alert('Not logged in')
+      setLoading(false)
+      return
+    }
 
-    const [h, m] = confirm.time.split(':').map(Number)
-    const start = new Date(confirm.date)
-    start.setHours(h, m, 0, 0)
+    const { date, time } = confirm
+    const [hours, minutes] = time.replace(' AM', '').replace(' PM', '').split(':')
+    let h = parseInt(hours)
+    if (time.includes('PM') && h !== 12) h += 12
+    if (time.includes('AM') && h === 12) h = 0
 
-    const { error } = await supabase.from('bookings').insert({
+    const start = new Date(date)
+    start.setHours(h, parseInt(minutes), 0, 0)
+
+    const { data, error } = await supabase.from('bookings').insert({
       client_id: user.id,
       pro_id: proId,
       status: 'pending',
       start_time: start.toISOString(),
-    })
+      notes: `Booked for ${date.toLocaleDateString()} at ${time}`,
+    }).select()
 
-    if (error) alert(error.message)
-    else router.push('/dashboard/bookings')
+    console.log('Insert result:', { data, error })
+    if (error) {
+      alert('Booking failed: ' + error.message)
+    } else {
+      router.push('/dashboard/bookings')
+    }
 
     setLoading(false)
     setConfirm(null)
@@ -68,41 +60,74 @@ export default function AvailabilityCalendar({
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-[#f0ebe3] mb-6">
-      <h2 className="font-semibold mb-1">Available times</h2>
-      <p className="text-sm text-gray-500 mb-4">Only the days and times this Pro set</p>
+      <h2 className="font-semibold text-[#2c2c2c] mb-1">Book a time</h2>
+      <p className="text-sm text-gray-500 mb-4">Next available 3-hour blocks</p>
 
-      {Object.keys(grouped).length === 0 ? (
-        <p className="text-sm text-gray-500">No availability set yet.</p>
-      ) : (
-        Object.entries(grouped).map(([dateStr, daySlots]: any) => (
-          <div key={dateStr} className="mb-5">
-            <p className="text-sm font-medium mb-2">
-              {new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+      <div className="space-y-4 mb-6">
+        {upcoming.map((date) => (
+          <div key={date.toISOString()}>
+            <p className="text-sm font-medium text-[#2c2c2c] mb-2">
+              {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {daySlots.map((slot: any, i: number) => (
+            <div className="grid grid-cols-2 gap-2">
+              {blocks.map((time) => (
                 <button
-                  key={i}
-                  onClick={() => setConfirm({ date: slot.date, time: slot.time })}
-                  className="border border-[#f0ebe3] rounded-xl px-4 py-2 text-sm hover:bg-[#f0f7ed]"
+                  key={time}
+                  onClick={() => setConfirm({ date, time })}
+                  disabled={loading}
+                  className="border border-[#f0ebe3] rounded-xl py-2.5 text-sm hover:bg-[#f0f7ed] disabled:opacity-50"
                 >
-                  {slot.time}
+                  {time}
                 </button>
               ))}
             </div>
           </div>
-        ))
-      )}
+        ))}
+      </div>
+
+      <div className="border-t border-[#f0ebe3] pt-5">
+        <p className="text-xs text-gray-500 mb-2">Or pick a custom date & time</p>
+        <div className="flex gap-2">
+          <input
+            type="date"
+            value={customDate}
+            onChange={(e) => setCustomDate(e.target.value)}
+            className="flex-1 border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm"
+          />
+          <input
+            type="time"
+            value={customTime}
+            onChange={(e) => setCustomTime(e.target.value)}
+            className="flex-1 border border-[#f0ebe3] rounded-xl px-3 py-2.5 text-sm"
+          />
+          <button
+            onClick={() => {
+              if (customDate && customTime) {
+                setConfirm({ date: new Date(customDate), time: customTime })
+              }
+            }}
+            disabled={loading || !customDate || !customTime}
+            className="bg-[#5c7d4e] text-white px-4 rounded-xl text-sm font-medium disabled:opacity-50"
+          >
+            Book
+          </button>
+        </div>
+      </div>
 
       {confirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold mb-2">Confirm booking</h3>
+            <h3 className="font-semibold text-lg mb-2">Confirm booking</h3>
             <p className="text-sm text-gray-600 mb-5">
-              {confirm.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at {confirm.time}
+              Book for {confirm.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at {confirm.time}?
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setConfirm(null)} className="flex-1 border rounded-xl py-2.5 text-sm">Cancel</button>
+              <button
+                onClick={() => setConfirm(null)}
+                className="flex-1 border border-[#f0ebe3] rounded-xl py-2.5 text-sm"
+              >
+                Cancel
+              </button>
               <button
                 onClick={confirmBook}
                 disabled={loading}
