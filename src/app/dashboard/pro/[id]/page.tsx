@@ -68,7 +68,7 @@ export default async function ProProfilePage({ params }: { params: Promise<{ id:
         clientLng={clientProfile?.lng}
       />
 
-<AvailabilityCalendar proId={pro.id} />
+<AvailabilityCalendar proId={pro.id} availability={availability || []} />
 
       {services && services.length > 0 && (
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3] mb-6">
