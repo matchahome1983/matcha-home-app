@@ -77,7 +77,10 @@ export default function BookingRequestForm({
       endTime = new Date(`${customDate}T${customEnd}`).toISOString()
     } else if (selectedDay) {
       const slot = availability.find(a => a.day_of_week === selectedDay)
-      if (!slot) return
+      if (!slot) {
+        setLoading(false)
+        return
+      }
       const today = new Date()
       const dayIndex = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].indexOf(selectedDay)
       const next = new Date(today)
@@ -105,6 +108,11 @@ export default function BookingRequestForm({
     }
     setLoading(false)
   }
+
+  const canSubmit = Boolean(
+    (selectedDay || (customDate && customStart && customEnd)) &&
+    !(customDate && customStart && customEnd && isBooked(customDate, customStart, customEnd))
+  )
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#f0ebe3]">
@@ -189,7 +197,7 @@ export default function BookingRequestForm({
 
       <button
         onClick={submit}
-        disabled={loading || (!selectedDay && !(customDate && customStart && customEnd)) || (customDate && isBooked(customDate, customStart, customEnd))}
+        disabled={loading || !canSubmit}
         className="w-full bg-[#5c7d4e] text-white py-3 rounded-xl text-sm font-medium disabled:opacity-50"
       >
         {loading ? 'Sending...' : 'Send request'}
